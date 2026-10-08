@@ -7,6 +7,7 @@ import { PatientList } from "./pages/PatientList";
 import { PatientForm } from "./pages/PatientForm";
 import { PatientDetail } from "./pages/PatientDetail";
 import { ConsultationList } from "./pages/ConsultationList";
+import { Profile } from "./pages/Profile";
 import { ConsultationForm } from "./pages/ConsultationForm";
 import { MyConsultations } from "./pages/MyConsultations";
 
@@ -54,8 +55,8 @@ function AppRoutes() {
         />
 
         <Route path="consultations" element={<RoleRoute role="patient"><MyConsultations /></RoleRoute>} />
-        <Route path="profile" element={<div className="text-text-light">Perfil — por implementar</div>} />
-
+        <Route path="profile" element={<Profile />} />
+        
         <Route path="measurements" element={<div className="text-text-light">Mediciones — por implementar</div>} />
         <Route path="meals" element={<div className="text-text-light">Comidas — por implementar</div>} />
         <Route path="workouts" element={<div className="text-text-light">Entrenamientos — por implementar</div>} />

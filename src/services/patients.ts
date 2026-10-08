@@ -50,3 +50,8 @@ export async function updatePatient(id: string, input: UpdatePatientInput) {
 export async function deactivatePatient(id: string) {
   await apiFetch<{ success: true; message: string }>(`/patients/${id}`, { method: "DELETE" });
 }
+
+export async function getOwnPatient() {
+  const res = await apiFetch<Wrapped<Patient>>("/patients/me");
+  return res.data;
+}
