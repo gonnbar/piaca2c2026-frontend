@@ -5,6 +5,10 @@ import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
 import { PatientList } from "./pages/PatientList";
 import { PatientForm } from "./pages/PatientForm";
+import { PatientDetail } from "./pages/PatientDetail";
+import { ConsultationList } from "./pages/ConsultationList";
+import { ConsultationForm } from "./pages/ConsultationForm";
+import { MyConsultations } from "./pages/MyConsultations";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -32,36 +36,31 @@ function AppRoutes() {
         }
       >
         <Route index element={<Dashboard />} />
+
+        <Route path="patients" element={<RoleRoute role="nutritionist"><PatientList /></RoleRoute>} />
+        <Route path="patients/new" element={<RoleRoute role="nutritionist"><PatientForm /></RoleRoute>} />
+        <Route path="patients/:id" element={<RoleRoute role="nutritionist"><PatientDetail /></RoleRoute>} />
         <Route
-          path="patients"
-          element={
-            <RoleRoute role="nutritionist">
-              <PatientList />
-            </RoleRoute>
-          }
+          path="patients/:id/consultations"
+          element={<RoleRoute role="nutritionist"><ConsultationList /></RoleRoute>}
         />
         <Route
-          path="patients/new"
-          element={
-            <RoleRoute role="nutritionist">
-              <PatientForm />
-            </RoleRoute>
-          }
+          path="patients/:id/consultations/new"
+          element={<RoleRoute role="nutritionist"><ConsultationForm /></RoleRoute>}
         />
         <Route
-          path="patients/:id"
-          element={
-            <RoleRoute role="nutritionist">
-              <div className="text-text-light">Detalle de paciente — por implementar</div>
-            </RoleRoute>
-          }
+          path="patients/:id/consultations/:consultationId/edit"
+          element={<RoleRoute role="nutritionist"><ConsultationForm /></RoleRoute>}
         />
+
+        <Route path="consultations" element={<RoleRoute role="patient"><MyConsultations /></RoleRoute>} />
+        <Route path="profile" element={<div className="text-text-light">Perfil — por implementar</div>} />
+
         <Route path="measurements" element={<div className="text-text-light">Mediciones — por implementar</div>} />
         <Route path="meals" element={<div className="text-text-light">Comidas — por implementar</div>} />
         <Route path="workouts" element={<div className="text-text-light">Entrenamientos — por implementar</div>} />
         <Route path="physical-activity" element={<div className="text-text-light">Actividad física — por implementar</div>} />
         <Route path="photos" element={<div className="text-text-light">Fotografías — por implementar</div>} />
-        <Route path="consultations" element={<div className="text-text-light">Consultas — por implementar</div>} />
       </Route>
     </Routes>
   );

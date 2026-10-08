@@ -31,3 +31,22 @@ export async function createPatient(input: NewPatientInput) {
   });
   return res.data;
 }
+
+export type UpdatePatientInput = Partial<Omit<NewPatientInput, "email" | "password">>;
+
+export async function getPatient(id: string) {
+  const res = await apiFetch<Wrapped<Patient>>(`/patients/${id}`);
+  return res.data;
+}
+
+export async function updatePatient(id: string, input: UpdatePatientInput) {
+  const res = await apiFetch<Wrapped<Patient>>(`/patients/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  return res.data;
+}
+
+export async function deactivatePatient(id: string) {
+  await apiFetch<{ success: true; message: string }>(`/patients/${id}`, { method: "DELETE" });
+}

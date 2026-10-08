@@ -1,3 +1,4 @@
+import type { SkinfoldKey } from "../utils/skinfolds";
 export type PatientUser = { _id: string; name: string; email: string; role: "nutritionist" | "patient" };
 
 export type Patient = {
@@ -15,5 +16,25 @@ export type Patient = {
   foodPreferences?: string;
   goals?: string;
   isActive: boolean;
+  createdAt: string;
+};
+
+export type Measurement = Partial<Record<SkinfoldKey, number>> & {
+  _id: string;
+  weight?: number;
+  height?: number;
+  imc?: number;
+  bodyFatPercentage?: number;
+  musclePercentage?: number;
+};
+
+export type Consultation = {
+  _id: string;
+  patient: string;
+  nutritionist: string;
+  date: string;
+  observations: string;
+  privateNotes?: string; // el backend solo la envía al nutricionista
+  measurement: Measurement | null;
   createdAt: string;
 };
