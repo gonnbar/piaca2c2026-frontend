@@ -1,5 +1,5 @@
 import { apiFetch } from "./api";
-import type { Consultation } from "../types";
+import type { Consultation, NutritionistSummary, PatientDashboardSummary } from "../types";
 import type { SkinfoldKey } from "../utils/skinfolds";
 
 type Wrapped<T> = { success: true; data: T };
@@ -43,4 +43,14 @@ export async function updateConsultation(id: string, input: ConsultationInput) {
 
 export async function deleteConsultation(id: string) {
   await apiFetch<{ success: true; message: string }>(`/consultations/${id}`, { method: "DELETE" });
+}
+
+export async function getNutritionistSummary() {
+  const res = await apiFetch<Wrapped<NutritionistSummary>>("/consultations/summary");
+  return res.data;
+}
+
+export async function getPatientSummary() {
+  const res = await apiFetch<Wrapped<PatientDashboardSummary>>("/consultations/summary");
+  return res.data;
 }

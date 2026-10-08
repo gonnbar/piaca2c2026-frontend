@@ -38,3 +38,15 @@ export type Consultation = {
   measurement: Measurement | null;
   createdAt: string;
 };
+
+export type NutritionistSummary = {
+  patients: number;
+  consultations: number;
+  consultationsLast30Days: number;
+  recent: { _id: string; date: string; patientId: string; patientName: string }[];
+};
+
+export type PatientDashboardSummary = {
+  consultations: number;
+  last: { date: string; weight: number | null; imc: number | null } | null;
+};
