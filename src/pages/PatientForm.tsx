@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Save } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { FormField } from "../components/ui/FormField";
 import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
+import { Textarea } from "../components/ui/Textarea";
 import { createPatient, type NewPatientInput } from "../services/patients";
 import { CONDITIONS } from "../utils/conditions";
 
@@ -20,8 +23,6 @@ const emptyForm = {
   foodPreferences: "",
   goals: "",
 };
-
-const fieldClass = "w-full rounded-md border border-gray-300 px-3 py-2 text-sm";
 
 export function PatientForm() {
   const navigate = useNavigate();
@@ -92,12 +93,12 @@ export function PatientForm() {
                 <Input id="birthDate" type="date" value={form.birthDate} onChange={setField("birthDate")} />
               </FormField>
               <FormField label="Sexo" htmlFor="sex">
-                <select id="sex" className={fieldClass} value={form.sex} onChange={setField("sex")}>
+                <Select id="sex" value={form.sex} onChange={setField("sex")}>
                   <option value="">Sin especificar</option>
                   <option value="F">Femenino</option>
                   <option value="M">Masculino</option>
                   <option value="X">Otro</option>
-                </select>
+                </Select>
               </FormField>
               <FormField label="Teléfono" htmlFor="phone">
                 <Input id="phone" value={form.phone} onChange={setField("phone")} />
@@ -111,6 +112,7 @@ export function PatientForm() {
                   <label key={c.value} className="flex items-center gap-2 text-sm text-text">
                     <input
                       type="checkbox"
+                      className="h-4 w-4 accent-primary"
                       checked={conditions.includes(c.value)}
                       onChange={() => toggleCondition(c.value)}
                     />
@@ -124,22 +126,23 @@ export function PatientForm() {
               <Input id="otherConditions" value={form.otherConditions} onChange={setField("otherConditions")} />
             </FormField>
             <FormField label="Alergias" htmlFor="allergies">
-              <textarea id="allergies" rows={2} className={fieldClass} value={form.allergies} onChange={setField("allergies")} />
+              <Textarea id="allergies" rows={2} value={form.allergies} onChange={setField("allergies")} />
             </FormField>
             <FormField label="Preferencias alimentarias" htmlFor="foodPreferences">
-              <textarea id="foodPreferences" rows={2} className={fieldClass} value={form.foodPreferences} onChange={setField("foodPreferences")} />
+              <Textarea id="foodPreferences" rows={2} value={form.foodPreferences} onChange={setField("foodPreferences")} />
             </FormField>
             <FormField label="Objetivos" htmlFor="goals">
-              <textarea id="goals" rows={2} className={fieldClass} value={form.goals} onChange={setField("goals")} />
+              <Textarea id="goals" rows={2} value={form.goals} onChange={setField("goals")} />
             </FormField>
 
             {error && <p className="text-sm text-error">{error}</p>}
 
             <div className="flex gap-3">
               <Button type="submit" disabled={saving}>
+                <Save className="mr-2 h-4 w-4" />
                 {saving ? "Guardando…" : "Crear paciente"}
               </Button>
-              <Button type="button" onClick={() => navigate("/patients")}>
+              <Button type="button" variant="secondary" onClick={() => navigate("/patients")}>
                 Cancelar
               </Button>
             </div>

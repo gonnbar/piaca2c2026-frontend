@@ -2,23 +2,31 @@
 
 @theme {
   --color-primary: #4CAF50;
-  --color-primary-dark: #388E3C;
-  --color-primary-light: #8BC34A;
-  --color-background: #F5F7FA;
-  --color-surface: #FFFFFF;
+  --color-secondary: #88C34A;
+  --color-primary-soft: #E8F5E9;
   --color-text: #263238;
-  --color-text-light: #616161;
-  --color-border: #E0E0E0;
-  --color-error: #E53935;
+  --color-background: #F5F7FA;
+
+  --color-primary-dark: #388E3C;   /* hover de botones */
+  --color-surface: #FFFFFF;        /* tarjetas, inputs */
+  --color-text-light: #546E7A;     /* texto secundario, un gris azulado afín al #263238 */
+  --color-border: #DDE3E8;
+  --color-error: #D32F2F;
+
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 
-* {
-  border-color: var(--color-border);
-}
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--color-border);
+  }
 
-body {
-  background-color: var(--color-background);
-  color: var(--color-text);
-  font-family: system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
 }

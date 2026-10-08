@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Plus, Search } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
@@ -38,15 +39,22 @@ export function PatientList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-text">Pacientes</h1>
-        <Button onClick={() => navigate("/patients/new")}>Nuevo paciente</Button>
+        <Button onClick={() => navigate("/patients/new")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nuevo paciente
+        </Button>
       </div>
 
-      <Input
-        type="search"
-        placeholder="Buscar por nombre o DNI"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-light" />
+        <Input
+          type="search"
+          className="pl-9"
+          placeholder="Buscar por nombre o DNI"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
 
       {error && <p className="text-sm text-error">{error}</p>}
 
@@ -73,7 +81,7 @@ export function PatientList() {
                   {patients.map((p) => (
                     <tr
                       key={p._id}
-                      className="cursor-pointer border-t border-gray-200 hover:bg-gray-50"
+                      className="cursor-pointer border-t border-border hover:bg-background"
                       onClick={() => navigate(`/patients/${p._id}`)}
                     >
                       <td className="py-3 pr-4 font-medium text-text">{p.fullName}</td>
