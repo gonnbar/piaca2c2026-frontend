@@ -60,6 +60,7 @@ const COLORS = {
 
 export function Meals() {
   const { user } = useAuth();
+  const isNutritionist = user?.role === "nutritionist";
   const [foods, setFoods] = useState<Food[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [patients, setPatients] = useState<PatientOpt[]>([]);
@@ -74,11 +75,35 @@ export function Meals() {
     { foodId: "", grams: "" },
   ]);
   const [foodSearch, setFoodSearch] = useState("");
+  const [foodCategory, setFoodCategory] = useState("");
+  const [foodsOpen, setFoodsOpen] = useState(false);
+  const needsPatient = isNutritionist && !patientId;
 
-  async function loadFoods(search = foodSearch) {
+  const FOOD_CATEGORIES = [
+    "carnes",
+    "huevos",
+    "leche",
+    "quesos",
+    "yogur",
+    "verduras",
+    "cereales",
+    "frutas",
+    "semillas",
+    "miel",
+    "azucar",
+    "aceites",
+    "grasas",
+    "otros",
+  ];
+
+  async function loadFoods(search = foodSearch, category = foodCategory) {
     try {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (category) params.set("category", category);
+      const qs = params.toString();
       const res = await apiFetch<{ success: boolean; data: Food[] }>(
-        `/foods${search ? `?search=${encodeURIComponent(search)}` : ""}`,
+        `/foods${qs ? `?${qs}` : ""}`,
       );
       setFoods(Array.isArray(res.data) ? res.data : []);
       if (!Array.isArray(res.data) || res.data.length === 0) {
@@ -92,6 +117,11 @@ export function Meals() {
   }
 
   async function loadMeals(pid = patientId) {
+    // Nutricionista sin paciente: no traer todo, limpiar para no mezclar.
+    if (isNutritionist && !pid) {
+      setMeals([]);
+      return;
+    }
     try {
       const res = await apiFetch<{ success: boolean; data: Meal[] }>(`/meals${pid ? `?patient=${pid}` : ""}`);
       setMeals(Array.isArray(res.data) ? res.data : []);
@@ -102,6 +132,20 @@ export function Meals() {
   }
 
   async function loadPatients() {
+    // Paciente: no usa GET /patients (solo nutricionista, 403). Resuelve su
+    // propio paciente vía GET /patients/me y fija patientId automáticamente.
+    if (!isNutritionist) {
+      try {
+        const res = await apiFetch<{ success: boolean; data: { _id: string; fullName: string } }>(
+          "/patients/me",
+        );
+        setPatients([{ _id: res.data._id, fullName: res.data.fullName }]);
+        setPatientId(res.data._id);
+      } catch {
+        setPatients([]);
+      }
+      return;
+    }
     try {
       const res = await apiFetch<{ success: boolean; data: Array<{ _id: string; fullName: string }> }>(
         `/patients`,
@@ -133,12 +177,12 @@ export function Meals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
 
-  // recarga foods cuando cambia la búsqueda (debounce simple via efecto)
+  // recarga foods cuando cambian búsqueda o categoría (debounce simple)
   useEffect(() => {
-    const t = setTimeout(() => loadFoods(foodSearch), 300);
+    const t = setTimeout(() => loadFoods(foodSearch, foodCategory), 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [foodSearch]);
+  }, [foodSearch, foodCategory]);
 
   // preview locales (sin hardcodear, usa utils/calculations.ts)
   const previewTotals = useMemo(() => {
@@ -155,10 +199,10 @@ export function Meals() {
   }, [items, foods]);
 
   const filteredFoods = useMemo(() => {
-    if (!foodSearch) return foods;
-    const q = foodSearch.toLowerCase();
-    return foods.filter((f) => f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q));
-  }, [foods, foodSearch]);
+    // El filtrado fuerte lo hace el backend (?search + ?category); acá solo
+    // se refleja lo recibido para el <select> del formulario y la tabla.
+    return foods;
+  }, [foods]);
 
   // Totales diarios y series para gráficos (consumen API, no hardcodeados)
   const dailyTotals = useMemo(() => {
@@ -245,48 +289,43 @@ export function Meals() {
         </p>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent className="grid sm:grid-cols-3 gap-4">
-          <div>
-            <label className="text-sm font-medium text-text">Paciente</label>
-            <select
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              className="mt-1 w-full h-10 rounded-md border border-border bg-surface px-3 text-sm"
-            >
-              <option value="">-- Seleccionar --</option>
-              {patients.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.fullName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-text">Buscar alimento</label>
-            <Input
-              placeholder="Ej: pollo, arroz..."
-              value={foodSearch}
-              onChange={(e) => setFoodSearch(e.target.value)}
-            />
-            <p className="text-xs text-text-light mt-1">
-              {loading ? "Cargando..." : `${filteredFoods.length} de ${foods.length} alimentos`}
-              {foods.length === 0 && !loading && " — verifique /api/foods y seed en backend"}
-            </p>
-          </div>
-          <div className="flex items-end">
-            <Button variant="secondary" className="w-full" onClick={load} disabled={loading}>
-              {loading ? "Cargando..." : "Actualizar"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Filtros: solo nutricionista (paciente usa su id de sesión) */}
+      {isNutritionist && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Paciente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-md">
+              <label className="text-sm font-medium text-text">Paciente</label>
+              <select
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-border bg-surface px-3 text-sm"
+              >
+                <option value="">-- Seleccionar --</option>
+                {patients.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Formulario */}
+      {needsPatient ? (
+        <Card>
+          <CardContent>
+            <p className="text-sm text-text-light">
+              Seleccioná un paciente para registrar y ver sus comidas.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Formulario */}
       <Card>
         <CardHeader>
           <CardTitle>Registrar comida</CardTitle>
@@ -549,10 +588,112 @@ export function Meals() {
         </ChartCard>
       </div>
 
-      <p className="text-xs text-text-light">
-        Gráficos consumen `GET /api/meals` y `GET /api/foods`. Totales diarios y distribución calculados en frontend
-        desde datos API; totales por comida vienen ya calculados de backend (`totalCalories/Protein/Carbs/Fat`).
-      </p>
+          <p className="text-xs text-text-light">
+            Gráficos consumen `GET /api/meals` y `GET /api/foods`. Totales diarios y distribución calculados en frontend
+            desde datos API; totales por comida vienen ya calculados de backend (`totalCalories/Protein/Carbs/Fat`).
+          </p>
+        </>
+      )}
+
+      {/* Base de alimentos: sección independiente, siempre visible
+          (no requiere paciente: GET /foods es global). Colapsada por defecto
+          y con tabla solo a partir de 2 letras para acotar crecimiento. */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle>Base de alimentos</CardTitle>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setFoodsOpen((v) => !v)}
+            >
+              {foodsOpen ? "Ocultar" : "Consultar alimentos"}
+            </Button>
+          </div>
+          {!foodsOpen && (
+            <p className="text-sm text-text-light">
+              Consultá la tabla de alimentos disponibles para armar la comida.
+            </p>
+          )}
+        </CardHeader>
+        {foodsOpen && (
+          <CardContent className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-text">Buscar alimento</label>
+                <Input
+                  placeholder="Ej: pollo, arroz... (mín. 2 letras)"
+                  value={foodSearch}
+                  onChange={(e) => setFoodSearch(e.target.value)}
+                />
+                <p className="text-xs text-text-light mt-1">
+                  {loading
+                    ? "Cargando..."
+                    : `${filteredFoods.length} alimentos${foodCategory ? ` en ${foodCategory}` : ""}${foodSearch ? ` para "${foodSearch}"` : ""} (máx. 200)`}
+                  {foods.length === 0 &&
+                    !loading &&
+                    " — verifique /api/foods y seed en backend"}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={foodCategory === "" ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => {
+                  setFoodCategory("");
+                  setFoodSearch("");
+                }}
+              >
+                Todos
+              </Button>
+              {FOOD_CATEGORIES.map((cat) => (
+                <Button
+                  key={cat}
+                  type="button"
+                  variant={foodCategory === cat ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setFoodCategory((c) => (c === cat ? "" : cat))}
+                >
+                  {cat}
+                </Button>
+              ))}
+            </div>
+            {filteredFoods.length === 0 ? (
+              <p className="text-sm text-text-light">Sin alimentos para la búsqueda.</p>
+            ) : (
+              <div className="overflow-auto max-h-96 rounded-lg border border-border">
+                <table className="w-full text-sm">
+                  <thead className="bg-background sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium text-text-light">Alimento</th>
+                      <th className="px-3 py-2 text-left font-medium text-text-light">Categoría</th>
+                      <th className="px-3 py-2 text-right font-medium text-text-light">kcal/100g</th>
+                      <th className="px-3 py-2 text-right font-medium text-text-light">P</th>
+                      <th className="px-3 py-2 text-right font-medium text-text-light">C</th>
+                      <th className="px-3 py-2 text-right font-medium text-text-light">G</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredFoods.map((f) => (
+                      <tr key={f._id} className="border-t border-border">
+                        <td className="px-3 py-2">{f.name}</td>
+                        <td className="px-3 py-2 text-text-light">{f.category}</td>
+                        <td className="px-3 py-2 text-right">{f.calories}</td>
+                        <td className="px-3 py-2 text-right">{f.protein}</td>
+                        <td className="px-3 py-2 text-right">{f.carbs}</td>
+                        <td className="px-3 py-2 text-right">{f.fat}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 }

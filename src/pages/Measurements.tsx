@@ -46,9 +46,9 @@ const FOLDS: { key: keyof Measurement; label: string }[] = [
 
 export function Measurements() {
   const { user } = useAuth();
+  const isNutritionist = user?.role === "nutritionist";
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [patients, setPatients] = useState<PatientOpt[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -57,8 +57,23 @@ export function Measurements() {
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
   const [folds, setFolds] = useState<Record<string, string>>({});
+  const needsPatient = isNutritionist && !patientId;
 
   async function loadPatients() {
+    // Paciente: no usa GET /patients (solo nutricionista, 403). Resuelve su
+    // propio paciente vía GET /patients/me y fija patientId automáticamente.
+    if (!isNutritionist) {
+      try {
+        const res = await apiFetch<{ success: boolean; data: { _id: string; fullName: string } }>(
+          "/patients/me",
+        );
+        setPatients([{ _id: res.data._id, fullName: res.data.fullName }]);
+        setPatientId(res.data._id);
+      } catch {
+        setPatients([]);
+      }
+      return;
+    }
     try {
       const res = await apiFetch<{ success: boolean; data: Array<{ _id: string; fullName: string }> }>(
         "/patients",
@@ -73,6 +88,11 @@ export function Measurements() {
   }
 
   async function loadMeasurements(pid = patientId) {
+    // Nutricionista sin paciente: no traer todo, limpiar para no mezclar.
+    if (isNutritionist && !pid) {
+      setMeasurements([]);
+      return;
+    }
     try {
       const res = await apiFetch<{ success: boolean; data: Measurement[] }>(
         `/measurements${pid ? `?patient=${pid}` : ""}`,
@@ -85,10 +105,8 @@ export function Measurements() {
   }
 
   async function load() {
-    setLoading(true);
     setError("");
     await Promise.all([loadPatients(), loadMeasurements()]);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -125,10 +143,14 @@ export function Measurements() {
       date: new Date(date).toISOString(),
     };
     if (weight) payload.weight = Number(weight);
-    if (height) payload.height = Number(height);
-    for (const f of FOLDS) {
-      const v = folds[f.key as string];
-      if (v) payload[f.key] = Number(v);
+    // Paciente solo puede registrar peso (AGENTS.md: Roles). Altura y
+    // pliegues son exclusivos del nutricionista.
+    if (isNutritionist) {
+      if (height) payload.height = Number(height);
+      for (const f of FOLDS) {
+        const v = folds[f.key as string];
+        if (v) payload[f.key] = Number(v);
+      }
     }
     try {
       await apiFetch("/measurements", { method: "POST", body: JSON.stringify(payload) });
@@ -182,44 +204,53 @@ export function Measurements() {
         <p className="text-sm text-text-light">Peso, altura y 9 pliegues (AGENTS.md: Mediciones)</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent className="grid sm:grid-cols-3 gap-4">
-          <div>
-            <label className="text-sm font-medium text-text">Paciente</label>
-            <select
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              className="mt-1 w-full h-10 rounded-md border border-border bg-surface px-3 text-sm"
-            >
-              <option value="">-- Seleccionar --</option>
-              {patients.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.fullName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <Button variant="secondary" className="w-full" onClick={load} disabled={loading}>
-              {loading ? "Cargando..." : "Actualizar"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {isNutritionist && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Paciente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-md">
+              <label className="text-sm font-medium text-text">Paciente</label>
+              <select
+                value={patientId}
+                onChange={(e) => setPatientId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-border bg-surface px-3 text-sm"
+              >
+                <option value="">-- Seleccionar --</option>
+                {patients.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Registrar medición</CardTitle>
+      {needsPatient ? (
+        <Card>
+          <CardContent>
+            <p className="text-sm text-text-light">
+              Seleccioná un paciente para registrar y ver su evolución.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>{isNutritionist ? "Registrar medición" : "Registrar peso"}</CardTitle>
           <p className="text-sm text-text-light">
-            Registrá peso, altura y pliegues en mm. IMC se calcula automáticamente (`peso / altura²`).
+            {isNutritionist
+              ? "Registrá peso, altura y pliegues en mm. IMC se calcula automáticamente (`peso / altura²`)."
+              : "Registrá tu peso. Las mediciones completas (altura y pliegues) las registra tu nutricionista."}
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className={`grid gap-4 ${isNutritionist ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
               <div>
                 <label className="text-sm font-medium text-text">Fecha</label>
                 <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -233,45 +264,50 @@ export function Measurements() {
                   placeholder="Ej: 78.5"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
+                  required
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-text">Altura (cm)</label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min={0}
-                  placeholder="Ej: 175"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                />
-              </div>
+              {isNutritionist && (
+                <div>
+                  <label className="text-sm font-medium text-text">Altura (cm)</label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    placeholder="Ej: 175"
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
-            {previewIMC != null && (
+            {isNutritionist && previewIMC != null && (
               <div className="text-sm bg-background rounded-md px-3 py-2 text-text-light">
                 Preview IMC: <b className="text-text">{previewIMC}</b> (fórmula `src/utils/calculations.ts`)
               </div>
             )}
 
-            <div>
-              <p className="text-sm font-medium text-text mb-2">Pliegues cutáneos (mm) - 9 sitios</p>
-              <div className="grid sm:grid-cols-3 gap-4">
-                {FOLDS.map((f) => (
-                  <div key={f.key}>
-                    <label className="text-sm text-text-light">{f.label}</label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min={0}
-                      placeholder="mm"
-                      value={folds[f.key as string] ?? ""}
-                      onChange={(e) => setFolds((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                    />
-                  </div>
-                ))}
+            {isNutritionist && (
+              <div>
+                <p className="text-sm font-medium text-text mb-2">Pliegues cutáneos (mm) - 9 sitios</p>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {FOLDS.map((f) => (
+                    <div key={f.key}>
+                      <label className="text-sm text-text-light">{f.label}</label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min={0}
+                        placeholder="mm"
+                        value={folds[f.key as string] ?? ""}
+                        onChange={(e) => setFolds((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {error && <p className="text-sm text-error">{error}</p>}
             {success && <p className="text-sm text-primary">{success}</p>}
@@ -432,13 +468,15 @@ export function Measurements() {
               </ResponsiveContainer>
             )}
           </div>
-          <p className="text-xs text-text-light mt-2">9 sitios AGENTS.md: bicipital, tricipital, etc.</p>
-        </ChartCard>
-      </div>
+              <p className="text-xs text-text-light mt-2">9 sitios AGENTS.md: bicipital, tricipital, etc.</p>
+            </ChartCard>
+          </div>
 
-      <p className="text-xs text-text-light">
-        Gráficos consumen `GET /api/measurements`. No datos hardcodeados en producción.
-      </p>
+          <p className="text-xs text-text-light">
+            Gráficos consumen `GET /api/measurements`. No datos hardcodeados en producción.
+          </p>
+        </>
+      )}
     </div>
   );
 }
