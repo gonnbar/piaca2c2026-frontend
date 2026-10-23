@@ -5,8 +5,9 @@ import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { ChartCard } from "../components/ui/ChartCard";
 import { useAuth } from "../contexts/AuthContext";
+import { FoodFormModal, type FoodFormInput } from "../components/foods/FoodFormModal";
 import { canEdit, calculateMealTotals } from "../utils/calculations";
-import { EDIT_WINDOW_MS } from "../utils/constants";
+import { EDIT_WINDOW_MS, FOOD_CATEGORIES } from "../utils/constants";
 import {
   LineChart,
   Line,
@@ -31,6 +32,7 @@ type Food = {
   protein: number;
   carbs: number;
   fat: number;
+  isActive?: boolean;
 };
 
 type MealItemPopulated = {
@@ -77,30 +79,24 @@ export function Meals() {
   const [foodSearch, setFoodSearch] = useState("");
   const [foodCategory, setFoodCategory] = useState("");
   const [foodsOpen, setFoodsOpen] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
+  const [foodModalOpen, setFoodModalOpen] = useState(false);
+  const [editingFood, setEditingFood] = useState<Food | null>(null);
+  const [savingFood, setSavingFood] = useState(false);
+  const [foodFormError, setFoodFormError] = useState("");
+  const [foodActionId, setFoodActionId] = useState<string | null>(null);
   const needsPatient = isNutritionist && !patientId;
 
-  const FOOD_CATEGORIES = [
-    "carnes",
-    "huevos",
-    "leche",
-    "quesos",
-    "yogur",
-    "verduras",
-    "cereales",
-    "frutas",
-    "semillas",
-    "miel",
-    "azucar",
-    "aceites",
-    "grasas",
-    "otros",
-  ];
-
-  async function loadFoods(search = foodSearch, category = foodCategory) {
+  async function loadFoods(
+    search = foodSearch,
+    category = foodCategory,
+    includeInactive = isNutritionist && showInactive,
+  ) {
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
       if (category) params.set("category", category);
+      if (includeInactive) params.set("includeInactive", "true");
       const qs = params.toString();
       const res = await apiFetch<{ success: boolean; data: Food[] }>(
         `/foods${qs ? `?${qs}` : ""}`,
@@ -177,26 +173,29 @@ export function Meals() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
 
-  // recarga foods cuando cambian búsqueda o categoría (debounce simple)
+  // recarga foods cuando cambian búsqueda, categoría o el toggle de eliminados
   useEffect(() => {
     const t = setTimeout(() => loadFoods(foodSearch, foodCategory), 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [foodSearch, foodCategory]);
+  }, [foodSearch, foodCategory, showInactive]);
+
+  // Los alimentos con borrado lógico no son seleccionables en comidas nuevas.
+  const selectableFoods = useMemo(() => foods.filter((f) => f.isActive !== false), [foods]);
 
   // preview locales (sin hardcodear, usa utils/calculations.ts)
   const previewTotals = useMemo(() => {
     const valid = items
       .filter((i) => i.foodId && i.grams)
       .map((i) => {
-        const f = foods.find((x) => x._id === i.foodId);
+        const f = selectableFoods.find((x) => x._id === i.foodId);
         if (!f) return null;
         return { ...f, grams: Number(i.grams) };
       })
       .filter(Boolean) as { calories: number; protein: number; carbs: number; fat: number; grams: number }[];
     if (valid.length === 0) return null;
     return calculateMealTotals(valid);
-  }, [items, foods]);
+  }, [items, selectableFoods]);
 
   const filteredFoods = useMemo(() => {
     // El filtrado fuerte lo hace el backend (?search + ?category); acá solo
@@ -264,6 +263,74 @@ export function Meals() {
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al guardar");
+    }
+  }
+
+  function openCreateFood() {
+    setEditingFood(null);
+    setFoodFormError("");
+    setFoodModalOpen(true);
+  }
+
+  function openEditFood(food: Food) {
+    setEditingFood(food);
+    setFoodFormError("");
+    setFoodModalOpen(true);
+  }
+
+  async function handleFoodSubmit(values: FoodFormInput) {
+    const current = editingFood;
+    setSavingFood(true);
+    setFoodFormError("");
+    try {
+      if (current) {
+        await apiFetch(`/foods/${current._id}`, { method: "PUT", body: JSON.stringify(values) });
+        setSuccess("Alimento actualizado");
+      } else {
+        await apiFetch("/foods", { method: "POST", body: JSON.stringify(values) });
+        setSuccess("Alimento creado");
+      }
+      setFoodModalOpen(false);
+      setEditingFood(null);
+      await loadFoods();
+    } catch (e) {
+      setFoodFormError(e instanceof Error ? e.message : "Error al guardar el alimento");
+    } finally {
+      setSavingFood(false);
+    }
+  }
+
+  async function handleFoodDelete(food: Food) {
+    const ok = window.confirm(
+      `¿Eliminar "${food.name}"? Dejará de estar disponible para nuevas comidas (las comidas históricas se conservan).`,
+    );
+    if (!ok) return;
+    setFoodActionId(food._id);
+    setError("");
+    try {
+      await apiFetch(`/foods/${food._id}`, { method: "DELETE" });
+      setSuccess("Alimento eliminado");
+      // Evitar que quede seleccionado en el formulario de comidas.
+      setItems((prev) => prev.filter((r) => r.foodId !== food._id));
+      await loadFoods();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar el alimento");
+    } finally {
+      setFoodActionId(null);
+    }
+  }
+
+  async function handleFoodRestore(food: Food) {
+    setFoodActionId(food._id);
+    setError("");
+    try {
+      await apiFetch(`/foods/${food._id}/restore`, { method: "PATCH" });
+      setSuccess("Alimento reactivado");
+      await loadFoods();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al reactivar el alimento");
+    } finally {
+      setFoodActionId(null);
     }
   }
 
@@ -379,13 +446,13 @@ export function Meals() {
                     required
                   >
                     <option value="">
-                      {foods.length === 0
+                      {selectableFoods.length === 0
                         ? loading
                           ? "Cargando alimentos..."
                           : "Sin alimentos — ejecute seed"
                         : "Seleccionar alimento"}
                     </option>
-                    {filteredFoods.map((f) => (
+                    {selectableFoods.map((f) => (
                       <option key={f._id} value={f._id}>
                         {f.name} · {f.category} ({f.calories}kcal/100g)
                       </option>
@@ -602,14 +669,21 @@ export function Meals() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <CardTitle>Base de alimentos</CardTitle>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setFoodsOpen((v) => !v)}
-            >
-              {foodsOpen ? "Ocultar" : "Consultar alimentos"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {isNutritionist && (
+                <Button type="button" size="sm" onClick={openCreateFood}>
+                  + Nuevo alimento
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setFoodsOpen((v) => !v)}
+              >
+                {foodsOpen ? "Ocultar" : "Consultar alimentos"}
+              </Button>
+            </div>
           </div>
           {!foodsOpen && (
             <p className="text-sm text-text-light">
@@ -637,6 +711,26 @@ export function Meals() {
                 </p>
               </div>
             </div>
+
+            {isNutritionist && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant={showInactive ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setShowInactive((v) => !v)}
+                >
+                  {showInactive ? "Ocultar eliminados" : "Mostrar eliminados"}
+                </Button>
+                <span className="text-xs text-text-light">
+                  El borrado es lógico: podés reactivar alimentos eliminados.
+                </span>
+              </div>
+            )}
+
+            {needsPatient && error && <p className="text-sm text-error">{error}</p>}
+            {needsPatient && success && <p className="text-sm text-primary">{success}</p>}
+
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -674,17 +768,63 @@ export function Meals() {
                       <th className="px-3 py-2 text-right font-medium text-text-light">P</th>
                       <th className="px-3 py-2 text-right font-medium text-text-light">C</th>
                       <th className="px-3 py-2 text-right font-medium text-text-light">G</th>
+                      {isNutritionist && (
+                        <th className="px-3 py-2 text-right font-medium text-text-light">Acciones</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredFoods.map((f) => (
                       <tr key={f._id} className="border-t border-border">
-                        <td className="px-3 py-2">{f.name}</td>
+                        <td className="px-3 py-2">
+                          <span className={f.isActive === false ? "text-text-light line-through" : ""}>
+                            {f.name}
+                          </span>
+                          {f.isActive === false && (
+                            <span className="ml-2 text-xs bg-border px-1.5 py-0.5 rounded">Inactivo</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2 text-text-light">{f.category}</td>
                         <td className="px-3 py-2 text-right">{f.calories}</td>
                         <td className="px-3 py-2 text-right">{f.protein}</td>
                         <td className="px-3 py-2 text-right">{f.carbs}</td>
                         <td className="px-3 py-2 text-right">{f.fat}</td>
+                        {isNutritionist && (
+                          <td className="px-3 py-2 text-right whitespace-nowrap">
+                            {f.isActive === false ? (
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                disabled={foodActionId === f._id}
+                                onClick={() => handleFoodRestore(f)}
+                              >
+                                Reactivar
+                              </Button>
+                            ) : (
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={foodActionId === f._id}
+                                  onClick={() => openEditFood(f)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={foodActionId === f._id}
+                                  onClick={() => handleFoodDelete(f)}
+                                >
+                                  Eliminar
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -694,6 +834,21 @@ export function Meals() {
           </CardContent>
         )}
       </Card>
+
+      {foodModalOpen && (
+        <FoodFormModal
+          initial={editingFood}
+          categories={FOOD_CATEGORIES}
+          saving={savingFood}
+          error={foodFormError}
+          onClose={() => {
+            if (savingFood) return;
+            setFoodModalOpen(false);
+            setEditingFood(null);
+          }}
+          onSubmit={handleFoodSubmit}
+        />
+      )}
     </div>
   );
 }

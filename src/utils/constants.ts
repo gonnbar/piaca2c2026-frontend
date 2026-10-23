@@ -2,6 +2,24 @@ export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/ap
 
 export const EDIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutos
 
+// Debe coincidir con el enum del backend (src/utils/foodCategories.ts).
+export const FOOD_CATEGORIES = [
+  "carnes",
+  "huevos",
+  "leche",
+  "quesos",
+  "yogur",
+  "verduras",
+  "cereales",
+  "frutas",
+  "semillas",
+  "miel",
+  "azucar",
+  "aceites",
+  "grasas",
+  "otros",
+] as const;
+
 export const ROLES = {
   NUTRITIONIST: "nutritionist",
   PATIENT: "patient",
