@@ -14,6 +14,7 @@ import { Meals } from "./pages/Meals";
 import { Measurements } from "./pages/Measurements";
 import { Workouts } from "./pages/Workouts";
 import { PhysicalActivity } from "./pages/PhysicalActivity";
+import { Photos } from "./pages/Photos";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -65,7 +66,7 @@ function AppRoutes() {
         <Route path="meals" element={<Meals />} />
         <Route path="workouts" element={<Workouts />} />
         <Route path="physical-activity" element={<PhysicalActivity />} />
-        <Route path="photos" element={<div className="text-text-light">Fotografías — por implementar</div>} />
+        <Route path="photos" element={<Photos />} />
       </Route>
     </Routes>
   );

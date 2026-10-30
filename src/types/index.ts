@@ -81,3 +81,18 @@ export type PatientDashboardSummary = {
   consultations: number;
   last: { date: string; weight: number | null; imc: number | null } | null;
 };
+
+export type PhotoView = "frente" | "perfil" | "espalda";
+
+export type Photo = {
+  _id: string;
+  patient: string;
+  createdBy: string;
+  date: string;
+  view: PhotoView;
+  url: string;
+  filename: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+};
