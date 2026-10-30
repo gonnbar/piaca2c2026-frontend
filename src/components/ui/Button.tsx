@@ -15,7 +15,7 @@ export function Button({ variant = "primary", size = "md", className = "", ...pr
     danger: "bg-error text-white hover:bg-red-700",
   };
   const sizes: Record<string, string> = {
-    sm: "h-8 px-3 text-sm",
+    sm: "h-10 px-3 text-sm sm:h-8",
     md: "h-10 px-4",
     lg: "h-12 px-6 text-lg",
   };

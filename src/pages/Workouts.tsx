@@ -259,7 +259,7 @@ export function Workouts() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div>
                     <label className="text-sm font-medium text-text">Fecha y hora</label>
                     <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -298,7 +298,10 @@ export function Workouts() {
                     </Button>
                   </div>
                   {rows.map((row, idx) => (
-                    <div key={idx} className="grid grid-cols-2 sm:grid-cols-[1fr_80px_80px_100px_1fr_40px] gap-2 items-center rounded-md border border-border p-2">
+                    <div
+                      key={idx}
+                      className="grid grid-cols-2 items-center gap-2 rounded-md border border-border p-2 lg:grid-cols-[1fr_80px_80px_100px_1fr_40px]"
+                    >
                       <Input
                         placeholder="Ejercicio *"
                         value={row.name}
@@ -380,7 +383,7 @@ export function Workouts() {
                 <p className="text-sm text-text-light">Sin entrenamientos para el paciente/filtro.</p>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[560px] text-sm">
                     <thead className="bg-background">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
@@ -449,11 +452,11 @@ export function Workouts() {
                 </p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <XAxis dataKey="label" />
-                    <YAxis />
+                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                    <YAxis tick={{ fontSize: 11 }} width={36} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Line type="monotone" dataKey="peso" name="Peso (kg)" stroke="#4CAF50" strokeWidth={2} dot />
                     <Line type="monotone" dataKey="reps" name="Reps" stroke="#8BC34A" strokeWidth={1.5} dot={false} />
                   </LineChart>

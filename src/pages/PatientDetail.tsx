@@ -171,12 +171,18 @@ export function PatientDetail() {
 
               {error && <p className="text-sm text-error">{error}</p>}
 
-              <div className="flex gap-3">
-                <Button type="submit" disabled={saving}>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
                   <Save className="mr-2 h-4 w-4" />
                   {saving ? "Guardando…" : "Guardar cambios"}
                 </Button>
-                <Button type="button" variant="secondary" disabled={saving} onClick={() => setEditing(false)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                  disabled={saving}
+                  onClick={() => setEditing(false)}
+                >
                   <X className="mr-2 h-4 w-4" />
                   Cancelar
                 </Button>
@@ -193,16 +199,20 @@ export function PatientDetail() {
       <div>{backButton}</div>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-text">{patient.fullName}</h1>
-          <p className="text-sm text-text-light">{patient.user?.email}</p>
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-bold text-text">{patient.fullName}</h1>
+          <p className="break-words text-sm text-text-light">{patient.user?.email}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate(`/patients/${patient._id}/consultations`)}>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Button
+            variant="secondary"
+            className="flex-1 sm:flex-none"
+            onClick={() => navigate(`/patients/${patient._id}/consultations`)}
+          >
             <ClipboardList className="mr-2 h-4 w-4" />
             Consultas
           </Button>
-          <Button onClick={startEditing}>
+          <Button className="flex-1 sm:flex-none" onClick={startEditing}>
             <Pencil className="mr-2 h-4 w-4" />
             Editar
           </Button>

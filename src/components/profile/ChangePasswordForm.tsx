@@ -91,7 +91,7 @@ export function ChangePasswordForm() {
             </p>
           )}
 
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
             <KeyRound className="mr-2 h-4 w-4" />
             {saving ? "Guardando…" : "Cambiar contraseña"}
           </Button>

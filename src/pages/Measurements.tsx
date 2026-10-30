@@ -250,7 +250,7 @@ export function Measurements() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className={`grid gap-4 ${isNutritionist ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            <div className={`grid gap-4 ${isNutritionist ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}>
               <div>
                 <label className="text-sm font-medium text-text">Fecha</label>
                 <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -291,7 +291,7 @@ export function Measurements() {
             {isNutritionist && (
               <div>
                 <p className="text-sm font-medium text-text mb-2">Pliegues cutáneos (mm) - 9 sitios</p>
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {FOLDS.map((f) => (
                     <div key={f.key}>
                       <label className="text-sm text-text-light">{f.label}</label>
@@ -332,7 +332,7 @@ export function Measurements() {
             <p className="text-sm text-text-light">Sin mediciones para el paciente seleccionado.</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[720px] text-sm">
                 <thead className="bg-background">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
@@ -391,9 +391,9 @@ export function Measurements() {
               <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de peso</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis dataKey="label" />
-                  <YAxis domain={["dataMin - 1", "dataMax + 1"]} />
+                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                  <YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fontSize: 11 }} width={36} />
                   <Tooltip />
                   <Line type="monotone" dataKey="weight" name="Peso (kg)" stroke="#4CAF50" strokeWidth={2} dot />
                 </LineChart>
@@ -408,9 +408,9 @@ export function Measurements() {
               <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de IMC</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis dataKey="label" />
-                  <YAxis />
+                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                  <YAxis tick={{ fontSize: 11 }} width={36} />
                   <Tooltip />
                   <Line type="monotone" dataKey="imc" name="IMC" stroke="#388E3C" strokeWidth={2} dot />
                 </LineChart>
@@ -428,11 +428,11 @@ export function Measurements() {
               </p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis dataKey="label" />
-                  <YAxis />
+                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                  <YAxis tick={{ fontSize: 11 }} width={36} />
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line type="monotone" dataKey="bodyFat" name="% Grasa" stroke="#E53935" strokeWidth={2} dot />
                   <Line type="monotone" dataKey="muscle" name="% Músculo" stroke="#388E3C" strokeWidth={2} dot />
                 </LineChart>
@@ -442,16 +442,16 @@ export function Measurements() {
         </ChartCard>
 
         <ChartCard title="Evolución de pliegues (mm)">
-          <div className="h-64">
+          <div className="h-72">
             {!hasFoldsData ? (
               <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de pliegues</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis dataKey="label" />
-                  <YAxis />
+                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                  <YAxis tick={{ fontSize: 11 }} width={36} />
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
                   {FOLDS.map((f, i) => (
                     <Line
                       key={f.key}

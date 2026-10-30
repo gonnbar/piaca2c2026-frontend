@@ -117,25 +117,25 @@ function PhotoUploadSlot({
 
   return (
     <div className="space-y-3 rounded-lg border border-border p-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-text">{label}</p>
         {existing && <Badge>{file ? "Reemplazo" : "Cargada"}</Badge>}
         {!existing && file && <Badge>Nueva</Badge>}
       </div>
 
-      <div className="h-40 overflow-hidden rounded-md border border-border bg-background">
+      <div className="aspect-[3/4] overflow-hidden rounded-md border border-border bg-background">
         {file && preview ? (
           <img
             src={preview}
             alt={`Vista previa de ${label}`}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         ) : existing ? (
           <PhotoImage
             key={`${existing._id}-${existing.updatedAt}`}
             photo={existing}
             alt={label}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-text-light">
@@ -428,7 +428,7 @@ export function Photos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-text">Fotografías</h1>
           <p className="text-sm text-text-light">
@@ -437,7 +437,7 @@ export function Photos() {
         </div>
 
         {isNutritionist && (
-          <div className="w-full sm:w-72">
+          <div className="w-full lg:w-72">
             <FormField label="Paciente">
               <Select value={patientId} onChange={handlePatientChange}>
                 <option value="">Seleccioná un paciente</option>
@@ -452,8 +452,16 @@ export function Photos() {
         )}
       </div>
 
-      {error && <p className="text-sm text-error">{error}</p>}
-      {success && <p className="text-sm text-primary">{success}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      )}
+      {success && (
+        <p role="status" className="text-sm text-primary">
+          {success}
+        </p>
+      )}
 
       {!isNutritionist && (
         <Card>
@@ -481,7 +489,7 @@ export function Photos() {
                 </FormField>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {VIEWS.map(({ key, label }) => {
                   const existing = existingByView[key];
                   const disabled = Boolean(
@@ -501,7 +509,7 @@ export function Photos() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button type="submit" disabled={submitting}>
+                <Button type="submit" className="w-full sm:w-auto" disabled={submitting}>
                   {submitting ? "Guardando..." : "Guardar fotos"}
                 </Button>
                 <p className="text-xs text-text-light">
@@ -550,7 +558,7 @@ export function Photos() {
                       </span>
                     </div>
 
-                    <div className="grid gap-3 md:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {VIEWS.map(({ key, label }) => {
                         const photo = group.photos[key];
                         const editable =
@@ -561,7 +569,7 @@ export function Photos() {
                             key={key}
                             className="space-y-2 rounded-lg border border-border p-3"
                           >
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                               <span className="text-sm font-medium text-text">
                                 {label}
                               </span>
@@ -572,24 +580,24 @@ export function Photos() {
                               <button
                                 type="button"
                                 onClick={() => setLightbox(photo)}
-                                className="block h-48 w-full overflow-hidden rounded-md border border-border bg-background"
+                                className="block aspect-[3/4] w-full overflow-hidden rounded-md border border-border bg-background"
                                 title="Ampliar"
                               >
                                 <PhotoImage
                                   key={`${photo._id}-${photo.updatedAt}`}
                                   photo={photo}
                                   alt={`${label} del ${formatDay(group.day)}`}
-                                  className="h-full w-full object-cover"
+                                  className="h-full w-full object-contain"
                                 />
                               </button>
                             ) : (
-                              <div className="flex h-48 items-center justify-center rounded-md border border-dashed border-border bg-background text-xs text-text-light">
+                              <div className="flex aspect-[3/4] items-center justify-center rounded-md border border-dashed border-border bg-background text-xs text-text-light">
                                 Falta
                               </div>
                             )}
 
                             {photo && (
-                              <div className="flex items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -642,7 +650,7 @@ export function Photos() {
               key={`${lightbox._id}-${lightbox.updatedAt}`}
               photo={lightbox}
               alt={VIEW_LABELS[lightbox.view]}
-              className="max-h-[70vh] w-full rounded-md bg-background object-contain"
+              className="min-h-40 max-h-[60dvh] w-full rounded-md bg-background object-contain sm:max-h-[70vh]"
             />
             {lightbox.notes && (
               <p className="whitespace-pre-wrap text-sm text-text-light">

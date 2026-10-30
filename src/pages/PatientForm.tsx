@@ -88,12 +88,17 @@ export function PatientForm() {
 
             {error && <p className="text-sm text-error">{error}</p>}
 
-            <div className="flex gap-3">
-              <Button type="submit" disabled={saving}>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? "Guardando…" : "Crear paciente"}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => navigate("/patients")}>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full sm:w-auto"
+                onClick={() => navigate("/patients")}
+              >
                 Cancelar
               </Button>
             </div>

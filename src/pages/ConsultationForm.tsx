@@ -192,7 +192,7 @@ export function ConsultationForm() {
 
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium text-text">Pliegues cutáneos (mm)</legend>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {SKINFOLDS.map((s) => (
                   <FormField key={s.key} label={s.label} htmlFor={s.key}>
                     <Input
@@ -214,12 +214,18 @@ export function ConsultationForm() {
 
         {error && <p className="text-sm text-error">{error}</p>}
 
-        <div className="flex gap-3">
-          <Button type="submit" disabled={saving}>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
             {saving ? "Guardando…" : isEdit ? "Guardar cambios" : "Guardar consulta"}
           </Button>
-          <Button type="button" variant="secondary" disabled={saving} onClick={() => navigate(listPath)}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full sm:w-auto"
+            disabled={saving}
+            onClick={() => navigate(listPath)}
+          >
             <X className="mr-2 h-4 w-4" />
             Cancelar
           </Button>

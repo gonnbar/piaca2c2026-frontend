@@ -208,7 +208,7 @@ export function PhysicalActivity() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div>
                     <label className="text-sm font-medium text-text">Fecha y hora</label>
                     <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -277,7 +277,7 @@ export function PhysicalActivity() {
                 <p className="text-sm text-text-light">Sin actividades para el paciente.</p>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[560px] text-sm">
                     <thead className="bg-background">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
@@ -329,11 +329,11 @@ export function PhysicalActivity() {
                 <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <XAxis dataKey="label" />
-                    <YAxis />
+                  <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                    <YAxis tick={{ fontSize: 11 }} width={36} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="minutos" name="Minutos" fill="#4CAF50" />
                   </BarChart>
                 </ResponsiveContainer>

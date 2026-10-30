@@ -436,13 +436,16 @@ export function Meals() {
               </div>
 
               {items.map((row, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_120px_40px] gap-2 items-center">
+                <div
+                  key={idx}
+                  className="grid grid-cols-[minmax(0,1fr)_84px_40px] items-center gap-2 sm:grid-cols-[1fr_120px_40px]"
+                >
                   <select
                     value={row.foodId}
                     onChange={(e) =>
                       setItems((prev) => prev.map((r, i) => (i === idx ? { ...r, foodId: e.target.value } : r)))
                     }
-                    className="h-10 rounded-md border border-border bg-surface px-3 text-sm"
+                    className="h-10 min-w-0 w-full rounded-md border border-border bg-surface px-3 text-sm"
                     required
                   >
                     <option value="">
@@ -505,7 +508,7 @@ export function Meals() {
             <p className="text-sm text-text-light">Sin comidas para el paciente/filtro seleccionado.</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead className="bg-background">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
@@ -558,7 +561,7 @@ export function Meals() {
             <div className="rounded-lg bg-background p-3">
               <p className="text-sm font-medium text-text mb-2">Totales diarios</p>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[320px] text-sm">
                   <thead>
                     <tr className="text-text-light">
                       <th className="text-left font-medium px-2 py-1">Día</th>
@@ -587,7 +590,7 @@ export function Meals() {
       </Card>
 
       {/* Gráficos - consumen API, no hardcodeados */}
-      <div className="grid lg:grid-cols-3 gap-4">
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <ChartCard title="Distribución de macronutrientes (período)">
           <div className="h-64">
             {macroDistribution.length === 0 ? (
@@ -601,15 +604,16 @@ export function Meals() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
-                    label={({ name, value }) => `${name} ${value}g`}
+                    outerRadius="70%"
+                    labelLine={false}
+                    label={({ percent }) => `${Math.round((percent ?? 0) * 100)}%`}
                   >
                     {macroDistribution.map((entry, i) => (
                       <Cell key={i} fill={entry.fill} />
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -623,9 +627,9 @@ export function Meals() {
               <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyTotals}>
-                  <XAxis dataKey="dayLabel" />
-                  <YAxis />
+                <LineChart data={dailyTotals} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="dayLabel" tick={{ fontSize: 11 }} minTickGap={16} />
+                  <YAxis tick={{ fontSize: 11 }} width={36} />
                   <Tooltip />
                   <Line type="monotone" dataKey="calories" stroke="#4CAF50" strokeWidth={2} dot />
                 </LineChart>
@@ -640,11 +644,11 @@ export function Meals() {
               <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailyTotals}>
-                  <XAxis dataKey="dayLabel" />
-                  <YAxis />
+                <BarChart data={dailyTotals} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="dayLabel" tick={{ fontSize: 11 }} minTickGap={16} />
+                  <YAxis tick={{ fontSize: 11 }} width={36} />
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar dataKey="protein" name="Proteínas" fill={COLORS.protein} />
                   <Bar dataKey="carbs" name="Carbohidratos" fill={COLORS.carbs} />
                   <Bar dataKey="fat" name="Grasas" fill={COLORS.fat} />
@@ -759,7 +763,7 @@ export function Meals() {
               <p className="text-sm text-text-light">Sin alimentos para la búsqueda.</p>
             ) : (
               <div className="overflow-auto max-h-96 rounded-lg border border-border">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[640px] text-sm">
                   <thead className="bg-background sticky top-0">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium text-text-light">Alimento</th>

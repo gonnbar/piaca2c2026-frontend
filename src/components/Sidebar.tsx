@@ -35,29 +35,36 @@ const links: SidebarLink[] = [
   { to: "/profile", label: "Mi perfil", icon: UserRound },
 ];
 
-export function Sidebar() {
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
   const visible = links.filter((l) => !l.roles || (user && l.roles.includes(user.role)));
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-surface md:block">
-      <nav aria-label="Navegación principal" className="space-y-1 p-4">
-        {visible.map(({ to, label, patientLabel, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/"}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                isActive ? "bg-primary-soft font-medium text-primary" : "text-text hover:bg-background"
-              }`
-            }
-          >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {user?.role === "patient" && patientLabel ? patientLabel : label}
-          </NavLink>
-        ))}
-      </nav>
+    <nav aria-label="Navegación principal" className="space-y-1 p-4">
+      {visible.map(({ to, label, patientLabel, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={to === "/"}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+              isActive ? "bg-primary-soft font-medium text-primary" : "text-text hover:bg-background"
+            }`
+          }
+        >
+          <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {user?.role === "patient" && patientLabel ? patientLabel : label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <aside className="hidden w-64 shrink-0 border-r border-border bg-surface md:sticky md:top-14 md:block md:h-[calc(100dvh-3.5rem)] md:overflow-y-auto">
+      <SidebarNav />
     </aside>
   );
 }

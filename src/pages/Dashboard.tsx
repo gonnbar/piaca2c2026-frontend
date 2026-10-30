@@ -58,14 +58,14 @@ function useSummary<T>(load: () => Promise<T>) {
 
 function StatCard({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: string; hint?: string }) {
   return (
-    <Card className="flex items-center gap-4 p-6">
+    <Card className="flex min-w-0 items-center gap-4 p-6">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
-      <div>
+      <div className="min-w-0">
         <p className="text-sm text-text-light">{label}</p>
-        <p className="text-2xl font-bold text-text">{value}</p>
-        {hint && <p className="text-xs text-text-light">{hint}</p>}
+        <p className="break-words text-2xl font-bold text-text">{value}</p>
+        {hint && <p className="break-words text-xs text-text-light">{hint}</p>}
       </div>
     </Card>
   );
@@ -85,7 +85,7 @@ function NutritionistDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           icon={Users}
           label="Total de pacientes"
@@ -196,7 +196,7 @@ function NutritionistDashboard() {
                 <li key={c._id}>
                   <Link
                     to={`/patients/${c.patientId}/consultations`}
-                    className="flex items-center justify-between gap-4 py-3 text-sm hover:text-primary"
+                    className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm hover:text-primary"
                   >
                     <span className="font-medium text-text">{c.patientName || "Paciente"}</span>
                     <span className="text-text-light">{formatDate(c.date)}</span>
@@ -221,7 +221,7 @@ function PatientDashboard() {
   const last = data.last;
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard icon={ClipboardList} label="Consultas" value={String(data.consultations)} />
         <StatCard icon={CalendarDays} label="Última consulta" value={last ? formatDate(last.date) : "—"} />
         <StatCard
