@@ -37,9 +37,9 @@ export function PatientList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-text">Pacientes</h1>
-        <Button onClick={() => navigate("/patients/new")}>
+        <Button className="w-full sm:w-auto" onClick={() => navigate("/patients/new")}>
           <Plus className="mr-2 h-4 w-4" />
           Nuevo paciente
         </Button>
@@ -68,7 +68,7 @@ export function PatientList() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="text-text-light">
                   <tr>
                     <th className="py-2 pr-4 font-medium">Nombre</th>

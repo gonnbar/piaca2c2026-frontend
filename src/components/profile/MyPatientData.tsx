@@ -81,8 +81,8 @@ export function MyPatientData() {
                 }}
               />
             </FormField>
-            <div className="flex items-center gap-3">
-              <Button type="submit" disabled={savingPhone}>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="submit" className="w-full sm:w-auto" disabled={savingPhone}>
                 <Save className="mr-2 h-4 w-4" />
                 {savingPhone ? "Guardando…" : "Guardar teléfono"}
               </Button>

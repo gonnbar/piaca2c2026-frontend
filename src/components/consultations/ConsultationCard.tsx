@@ -57,7 +57,7 @@ export function ConsultationCard({ consultation, showPrivateNotes = false, actio
           <div className="space-y-2">
             <p className="text-xs font-medium text-text-light">Medición</p>
             {hasStats && (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                 {m.weight !== undefined && <Stat label="Peso" value={`${m.weight} kg`} />}
                 {m.height !== undefined && <Stat label="Altura" value={`${m.height} cm`} />}
                 {m.imc !== undefined && <Stat label="IMC" value={String(m.imc)} />}

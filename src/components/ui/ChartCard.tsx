@@ -7,7 +7,7 @@ export function ChartCard({ title, children }: { title: string; children: ReactN
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="min-w-0">{children}</CardContent>
     </Card>
   );
 }
