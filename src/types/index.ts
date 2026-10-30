@@ -39,11 +39,42 @@ export type Consultation = {
   createdAt: string;
 };
 
+export type DashboardActivityType =
+  | "consultation"
+  | "measurement"
+  | "meal"
+  | "workout"
+  | "physicalActivity"
+  | "photo";
+
+export type DashboardPatient = {
+  _id: string;
+  fullName: string;
+  updatedAt: string;
+  lastActivityAt: string | null;
+  lastActivityType: DashboardActivityType | null;
+  daysSinceLastActivity: number | null;
+};
+
 export type NutritionistSummary = {
   patients: number;
   consultations: number;
   consultationsLast30Days: number;
   recent: { _id: string; date: string; patientId: string; patientName: string }[];
+  metrics: {
+    totalPatients: number;
+    inactivePatients: number;
+    newPatientsThisMonth: number;
+    consultationsThisMonth: number;
+    measurementsLast30Days: number;
+    patientsWithRecentMeasurements: number;
+    measurementsWithBodyFatLast30Days: number;
+    mealsLast7Days: number;
+    patientsWithRecentMeals: number;
+    patientsWithoutRecentActivity: number;
+  };
+  recentPatients: DashboardPatient[];
+  inactivePatients: DashboardPatient[];
 };
 
 export type PatientDashboardSummary = {
