@@ -4,6 +4,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { ChartCard } from "../components/ui/ChartCard";
+import { RecordCard } from "../components/ui/RecordCard";
 import { useAuth } from "../contexts/AuthContext";
 import { calculateIMC, canEdit } from "../utils/calculations";
 import { EDIT_WINDOW_MS } from "../utils/constants";
@@ -12,6 +13,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } f
 type Measurement = {
   _id: string;
   patient: string;
+  consultation?: string | null;
   date: string;
   weight?: number;
   height?: number;
@@ -43,6 +45,12 @@ const FOLDS: { key: keyof Measurement; label: string }[] = [
   { key: "axilar", label: "Axilar (mm)" },
   { key: "peroneoGemelar", label: "Peroneo/Gemelar (mm)" },
 ];
+
+function formatFolds(m: Measurement) {
+  return FOLDS.filter((f) => (m as unknown as Record<string, number>)[f.key] != null)
+    .map((f) => `${f.label.split(" ")[0]}:${(m as unknown as Record<string, number>)[f.key]}mm`)
+    .join(" · ");
+}
 
 export function Measurements() {
   const { user } = useAuth();
@@ -154,7 +162,7 @@ export function Measurements() {
     }
     try {
       await apiFetch("/measurements", { method: "POST", body: JSON.stringify(payload) });
-      setSuccess("Medición registrada");
+      setSuccess("Peso registrado");
       setWeight("");
       setHeight("");
       setFolds({});
@@ -201,7 +209,11 @@ export function Measurements() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h1 className="text-2xl font-bold text-text">Mediciones corporales</h1>
-        <p className="text-sm text-text-light">Peso, altura y 9 pliegues (AGENTS.md: Mediciones)</p>
+        <p className="text-sm text-text-light">
+          {isNutritionist
+            ? "Historial y evolución corporal del paciente"
+            : "Registrá tu peso y seguí tu evolución"}
+        </p>
       </div>
 
       {isNutritionist && (
@@ -233,248 +245,296 @@ export function Measurements() {
         <Card>
           <CardContent>
             <p className="text-sm text-text-light">
-              Seleccioná un paciente para registrar y ver su evolución.
+              Seleccioná un paciente para ver su evolución.
             </p>
           </CardContent>
         </Card>
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>{isNutritionist ? "Registrar medición" : "Registrar peso"}</CardTitle>
-          <p className="text-sm text-text-light">
-            {isNutritionist
-              ? "Registrá peso, altura y pliegues en mm. IMC se calcula automáticamente (`peso / altura²`)."
-              : "Registrá tu peso. Las mediciones completas (altura y pliegues) las registra tu nutricionista."}
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className={`grid gap-4 ${isNutritionist ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}>
-              <div>
-                <label className="text-sm font-medium text-text">Fecha</label>
-                <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text">Peso (kg)</label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min={0}
-                  placeholder="Ej: 78.5"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  required
-                />
-              </div>
-              {isNutritionist && (
-                <div>
-                  <label className="text-sm font-medium text-text">Altura (cm)</label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    placeholder="Ej: 175"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                  />
-                </div>
-              )}
-            </div>
+          {error && <p className="text-sm text-error">{error}</p>}
+          {success && <p className="text-sm text-primary">{success}</p>}
 
-            {isNutritionist && previewIMC != null && (
-              <div className="text-sm bg-background rounded-md px-3 py-2 text-text-light">
-                Preview IMC: <b className="text-text">{previewIMC}</b> (fórmula `src/utils/calculations.ts`)
-              </div>
-            )}
-
-            {isNutritionist && (
-              <div>
-                <p className="text-sm font-medium text-text mb-2">Pliegues cutáneos (mm) - 9 sitios</p>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {FOLDS.map((f) => (
-                    <div key={f.key}>
-                      <label className="text-sm text-text-light">{f.label}</label>
+          {!isNutritionist && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Registrar peso</CardTitle>
+                <p className="text-sm text-text-light">
+                  Registrá tu peso. Las mediciones completas (altura y pliegues) las registra tu
+                  nutricionista.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className={`grid gap-4 ${isNutritionist ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}>
+                    <div>
+                      <label className="text-sm font-medium text-text">Fecha</label>
+                      <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text">Peso (kg)</label>
                       <Input
                         type="number"
                         step="0.1"
                         min={0}
-                        placeholder="mm"
-                        value={folds[f.key as string] ?? ""}
-                        onChange={(e) => setFolds((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                        placeholder="Ej: 78.5"
+                        value={weight}
+                        onChange={(e) => setWeight(e.target.value)}
+                        required
                       />
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    {isNutritionist && (
+                      <div>
+                        <label className="text-sm font-medium text-text">Altura (cm)</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min={0}
+                          placeholder="Ej: 175"
+                          value={height}
+                          onChange={(e) => setHeight(e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </div>
 
-            {error && <p className="text-sm text-error">{error}</p>}
-            {success && <p className="text-sm text-primary">{success}</p>}
+                  {isNutritionist && previewIMC != null && (
+                    <div className="text-sm bg-background rounded-md px-3 py-2 text-text-light">
+                      Preview IMC: <b className="text-text">{previewIMC}</b> (fórmula `src/utils/calculations.ts`)
+                    </div>
+                  )}
 
-            <Button type="submit" className="w-full sm:w-auto">
-              Guardar medición
-            </Button>
-            <p className="text-xs text-text-light">
-              `POST /api/measurements` calcula `imc` en backend (`src/utils/calculations.ts`). Ventana edición 10 min
-              para paciente.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+                  {isNutritionist && (
+                    <div>
+                      <p className="text-sm font-medium text-text mb-2">Pliegues cutáneos (mm) - 9 sitios</p>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {FOLDS.map((f) => (
+                          <div key={f.key}>
+                            <label className="text-sm text-text-light">{f.label}</label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min={0}
+                              placeholder="mm"
+                              value={folds[f.key as string] ?? ""}
+                              onChange={(e) => setFolds((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Historial ({measurements.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {measurements.length === 0 ? (
-            <p className="text-sm text-text-light">Sin mediciones para el paciente seleccionado.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead className="bg-background">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light">Peso</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light">Altura</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light">IMC</th>
-                    <th className="px-3 py-2 text-left font-medium text-text-light">Pliegues</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {measurements.map((m) => {
-                    const editable = canEdit(m.createdAt, EDIT_WINDOW_MS) || user?.role === "nutritionist";
-                    const foldsSummary = FOLDS.filter((f) => (m as unknown as Record<string, number>)[f.key] != null)
-                      .map((f) => `${f.label.split(" ")[0]}:${(m as unknown as Record<string, number>)[f.key]}mm`)
-                      .join(" · ");
-                    return (
-                      <tr key={m._id} className="border-t border-border">
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          {new Date(m.date).toLocaleString("es-AR")}
-                          {!editable && (
-                            <span className="ml-2 text-xs bg-border px-1.5 py-0.5 rounded">bloqueado 10′</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-right">{m.weight ?? "—"}</td>
-                        <td className="px-3 py-2 text-right">{m.height ?? "—"}</td>
-                        <td className="px-3 py-2 text-right">{m.imc?.toFixed(2) ?? "—"}</td>
-                        <td className="px-3 py-2 text-xs max-w-[260px] truncate" title={foldsSummary}>
-                          {foldsSummary || "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(m._id, m.createdAt)}
-                            disabled={!editable}
-                            title={editable ? "Eliminar" : "Fuera de ventana 10 min"}
-                          >
-                            Eliminar
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  <Button type="submit" className="w-full sm:w-auto">
+                    Guardar peso
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        <ChartCard title="Evolución de peso">
-          <div className="h-64">
-            {chartData.filter((d) => d.weight != null).length === 0 ? (
-              <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de peso</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
-                  <YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fontSize: 11 }} width={36} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="weight" name="Peso (kg)" stroke="#4CAF50" strokeWidth={2} dot />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </ChartCard>
+          <Card>
+            <CardHeader>
+              <CardTitle>Historial ({measurements.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {measurements.length === 0 ? (
+                <p className="text-sm text-text-light">Sin mediciones para el paciente seleccionado.</p>
+              ) : (
+                <>
+                  <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
+                    <table className="w-full min-w-[720px] text-sm">
+                    <thead className="bg-background">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light">Peso</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light">Altura</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light">IMC</th>
+                        <th className="px-3 py-2 text-left font-medium text-text-light">Pliegues</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {measurements.map((m) => {
+                        const withinWindow = canEdit(m.createdAt, EDIT_WINDOW_MS);
+                        const fromConsultation = Boolean(m.consultation);
+                        const editable = isNutritionist ? !fromConsultation : withinWindow;
+                        const foldsSummary = formatFolds(m);
+                        return (
+                          <tr key={m._id} className="border-t border-border">
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              {new Date(m.date).toLocaleString("es-AR")}
+                              {fromConsultation && (
+                                <span className="ml-2 text-xs bg-border px-1.5 py-0.5 rounded">
+                                  desde consulta
+                                </span>
+                              )}
+                              {!editable && !fromConsultation && (
+                                <span className="ml-2 text-xs bg-border px-1.5 py-0.5 rounded">bloqueado 10′</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-right">{m.weight ?? "—"}</td>
+                            <td className="px-3 py-2 text-right">{m.height ?? "—"}</td>
+                            <td className="px-3 py-2 text-right">{m.imc?.toFixed(2) ?? "—"}</td>
+                            <td className="px-3 py-2 text-xs max-w-[260px] truncate" title={foldsSummary}>
+                              {foldsSummary || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {!fromConsultation && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(m._id, m.createdAt)}
+                                  disabled={!editable}
+                                  title={editable ? "Eliminar" : "Fuera de ventana 10 min"}
+                                >
+                                  Eliminar
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-        <ChartCard title="Evolución de IMC">
-          <div className="h-64">
-            {chartData.filter((d) => d.imc != null).length === 0 ? (
-              <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de IMC</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
-                  <YAxis tick={{ fontSize: 11 }} width={36} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="imc" name="IMC" stroke="#388E3C" strokeWidth={2} dot />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-          <p className="text-xs text-text-light mt-2">IMC = peso(kg) / altura(m)² (`src/utils/calculations.ts`)</p>
-        </ChartCard>
+                  <div className="space-y-3 md:hidden">
+                    {measurements.map((m) => {
+                      const withinWindow = canEdit(m.createdAt, EDIT_WINDOW_MS);
+                      const fromConsultation = Boolean(m.consultation);
+                      const editable = isNutritionist ? !fromConsultation : withinWindow;
+                      return (
+                        <RecordCard
+                          key={m._id}
+                          title={new Date(m.date).toLocaleString("es-AR")}
+                          badges={
+                            <>
+                              {fromConsultation && (
+                                <span className="text-xs bg-border px-1.5 py-0.5 rounded">
+                                  desde consulta
+                                </span>
+                              )}
+                              {!editable && !fromConsultation && (
+                                <span className="text-xs bg-border px-1.5 py-0.5 rounded">
+                                  bloqueado 10′
+                                </span>
+                              )}
+                            </>
+                          }
+                          fields={[
+                            { label: "Peso", value: m.weight ?? "—" },
+                            { label: "Altura", value: m.height ?? "—" },
+                            { label: "IMC", value: m.imc?.toFixed(2) ?? "—" },
+                            { label: "Pliegues", value: formatFolds(m) || "—", full: true },
+                          ]}
+                          actions={
+                            fromConsultation ? undefined : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(m._id, m.createdAt)}
+                                disabled={!editable}
+                                title={editable ? "Eliminar" : "Fuera de ventana 10 min"}
+                              >
+                                Eliminar
+                              </Button>
+                            )
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-        <ChartCard title="Evolución % grasa / % músculo">
-          <div className="h-64">
-            {chartData.filter((d) => d.bodyFat != null || d.muscle != null).length === 0 ? (
-              <p className="text-sm text-text-light h-full flex items-center justify-center">
-                Sin datos — placeholder hasta definir protocolo (Faulkner, etc.)
-              </p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
-                  <YAxis tick={{ fontSize: 11 }} width={36} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="bodyFat" name="% Grasa" stroke="#E53935" strokeWidth={2} dot />
-                  <Line type="monotone" dataKey="muscle" name="% Músculo" stroke="#388E3C" strokeWidth={2} dot />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </ChartCard>
+          <div className="grid lg:grid-cols-2 gap-4">
+            <ChartCard title="Evolución de peso">
+              <div className="h-64">
+                {chartData.filter((d) => d.weight != null).length === 0 ? (
+                  <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de peso</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                      <YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fontSize: 11 }} width={36} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="weight" name="Peso (kg)" stroke="#4CAF50" strokeWidth={2} dot />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
 
-        <ChartCard title="Evolución de pliegues (mm)">
-          <div className="h-72">
-            {!hasFoldsData ? (
-              <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de pliegues</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
-                  <YAxis tick={{ fontSize: 11 }} width={36} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 10 }} />
-                  {FOLDS.map((f, i) => (
-                    <Line
-                      key={f.key}
-                      type="monotone"
-                      dataKey={f.key}
-                      name={f.label.split(" ")[0]}
-                      stroke={`hsl(${(i * 40) % 360} 70% 45%)`}
-                      strokeWidth={1.5}
-                      dot={false}
-                      connectNulls
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-              <p className="text-xs text-text-light mt-2">9 sitios AGENTS.md: bicipital, tricipital, etc.</p>
+            <ChartCard title="Evolución de IMC">
+              <div className="h-64">
+                {chartData.filter((d) => d.imc != null).length === 0 ? (
+                  <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de IMC</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                      <YAxis tick={{ fontSize: 11 }} width={36} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="imc" name="IMC" stroke="#388E3C" strokeWidth={2} dot />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
+
+            <ChartCard title="Evolución % grasa / % músculo">
+              <div className="h-64">
+                {chartData.filter((d) => d.bodyFat != null || d.muscle != null).length === 0 ? (
+                  <p className="text-sm text-text-light h-full flex items-center justify-center">
+                    Sin datos — placeholder hasta definir protocolo (Faulkner, etc.)
+                  </p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                      <YAxis tick={{ fontSize: 11 }} width={36} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Line type="monotone" dataKey="bodyFat" name="% Grasa" stroke="#E53935" strokeWidth={2} dot />
+                      <Line type="monotone" dataKey="muscle" name="% Músculo" stroke="#388E3C" strokeWidth={2} dot />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
+
+            <ChartCard title="Evolución de pliegues (mm)">
+              <div className="h-72">
+                {!hasFoldsData ? (
+                  <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos de pliegues</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={16} />
+                      <YAxis tick={{ fontSize: 11 }} width={36} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      {FOLDS.map((f, i) => (
+                        <Line
+                          key={f.key}
+                          type="monotone"
+                          dataKey={f.key}
+                          name={f.label.split(" ")[0]}
+                          stroke={`hsl(${(i * 40) % 360} 70% 45%)`}
+                          strokeWidth={1.5}
+                          dot={false}
+                          connectNulls
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
             </ChartCard>
           </div>
 
-          <p className="text-xs text-text-light">
-            Gráficos consumen `GET /api/measurements`. No datos hardcodeados en producción.
-          </p>
         </>
       )}
     </div>

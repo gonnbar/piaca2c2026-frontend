@@ -4,6 +4,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { ChartCard } from "../components/ui/ChartCard";
+import { RecordCard } from "../components/ui/RecordCard";
 import { useAuth } from "../contexts/AuthContext";
 import { canEdit } from "../utils/calculations";
 import { EDIT_WINDOW_MS } from "../utils/constants";
@@ -211,7 +212,6 @@ export function Workouts() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h1 className="text-2xl font-bold text-text">Entrenamientos de fuerza</h1>
-        <p className="text-sm text-text-light">Series, reps, carga e intensidad (AGENTS.md)</p>
       </div>
 
       {isNutritionist && (
@@ -250,120 +250,117 @@ export function Workouts() {
       ) : (
         <>
           {!isNutritionist && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Registrar entrenamiento</CardTitle>
-              <p className="text-sm text-text-light">
-                Una sesión con uno o más ejercicios. Se registra, no se diseñan rutinas (AGENTS.md).
-              </p>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <div>
-                    <label className="text-sm font-medium text-text">Fecha y hora</label>
-                    <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <Card>
+              <CardHeader>
+                <CardTitle>Registrar entrenamiento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <label className="text-sm font-medium text-text">Fecha y hora</label>
+                      <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text">Intensidad percibida (1-10)</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={10}
+                        placeholder="Opcional"
+                        value={intensity}
+                        onChange={(e) => setIntensity(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-text">Observación sesión</label>
+                      <Input
+                        placeholder="Opcional"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-text">Intensidad percibida (1-10)</label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={10}
-                      placeholder="Opcional"
-                      value={intensity}
-                      onChange={(e) => setIntensity(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-text">Observación sesión</label>
-                    <Input
-                      placeholder="Opcional"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                    />
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-text">Ejercicios ({rows.length})</span>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setRows((prev) => [...prev, { ...EMPTY_ROW }])}
-                    >
-                      + Ejercicio
-                    </Button>
-                  </div>
-                  {rows.map((row, idx) => (
-                    <div
-                      key={idx}
-                      className="grid grid-cols-2 items-center gap-2 rounded-md border border-border p-2 lg:grid-cols-[1fr_80px_80px_100px_1fr_40px]"
-                    >
-                      <Input
-                        placeholder="Ejercicio *"
-                        value={row.name}
-                        onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, name: e.target.value } : r)))}
-                        required
-                      />
-                      <Input
-                        type="number"
-                        min={1}
-                        max={100}
-                        placeholder="Series *"
-                        value={row.sets}
-                        onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, sets: e.target.value } : r)))}
-                        required
-                      />
-                      <Input
-                        type="number"
-                        min={1}
-                        max={1000}
-                        placeholder="Reps *"
-                        value={row.reps}
-                        onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, reps: e.target.value } : r)))}
-                        required
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        max={1000}
-                        step="0.5"
-                        placeholder="Peso kg *"
-                        value={row.weight}
-                        onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, weight: e.target.value } : r)))}
-                        required
-                      />
-                      <Input
-                        placeholder="Nota (opcional)"
-                        value={row.notes}
-                        onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, notes: e.target.value } : r)))}
-                      />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-text">Ejercicios ({rows.length})</span>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
-                        onClick={() => setRows((prev) => prev.filter((_, i) => i !== idx))}
-                        disabled={rows.length === 1}
-                        aria-label="Quitar ejercicio"
+                        onClick={() => setRows((prev) => [...prev, { ...EMPTY_ROW }])}
                       >
-                        ✕
+                        + Ejercicio
                       </Button>
                     </div>
-                  ))}
-                </div>
+                    {rows.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="grid grid-cols-2 items-center gap-2 rounded-md border border-border p-2 lg:grid-cols-[1fr_80px_80px_100px_1fr_40px]"
+                      >
+                        <Input
+                          placeholder="Ejercicio *"
+                          value={row.name}
+                          onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, name: e.target.value } : r)))}
+                          required
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="Series *"
+                          value={row.sets}
+                          onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, sets: e.target.value } : r)))}
+                          required
+                        />
+                        <Input
+                          type="number"
+                          min={1}
+                          max={1000}
+                          placeholder="Reps *"
+                          value={row.reps}
+                          onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, reps: e.target.value } : r)))}
+                          required
+                        />
+                        <Input
+                          type="number"
+                          min={0}
+                          max={1000}
+                          step="0.5"
+                          placeholder="Peso kg *"
+                          value={row.weight}
+                          onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, weight: e.target.value } : r)))}
+                          required
+                        />
+                        <Input
+                          placeholder="Nota (opcional)"
+                          value={row.notes}
+                          onChange={(e) => setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, notes: e.target.value } : r)))}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setRows((prev) => prev.filter((_, i) => i !== idx))}
+                          disabled={rows.length === 1}
+                          aria-label="Quitar ejercicio"
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
 
-                {error && <p className="text-sm text-error">{error}</p>}
-                {success && <p className="text-sm text-primary">{success}</p>}
+                  {error && <p className="text-sm text-error">{error}</p>}
+                  {success && <p className="text-sm text-primary">{success}</p>}
 
-                <Button type="submit" className="w-full sm:w-auto">
-                  Guardar entrenamiento
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  <Button type="submit" className="w-full sm:w-auto">
+                    Guardar entrenamiento
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           )}
 
           <Card>
@@ -382,8 +379,9 @@ export function Workouts() {
               {workouts.length === 0 ? (
                 <p className="text-sm text-text-light">Sin entrenamientos para el paciente/filtro.</p>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full min-w-[560px] text-sm">
+                <>
+                  <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
+                    <table className="w-full min-w-[560px] text-sm">
                     <thead className="bg-background">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
@@ -424,6 +422,50 @@ export function Workouts() {
                     </tbody>
                   </table>
                 </div>
+
+                  <div className="space-y-3 md:hidden">
+                    {workouts.map((w) => {
+                      const editable = canEdit(w.createdAt, EDIT_WINDOW_MS) || user?.role === "nutritionist";
+                      return (
+                        <RecordCard
+                          key={w._id}
+                          title={new Date(w.date).toLocaleString("es-AR")}
+                          badges={
+                            !editable ? (
+                              <span className="text-xs bg-border px-1.5 py-0.5 rounded">
+                                bloqueado 10′
+                              </span>
+                            ) : undefined
+                          }
+                          fields={[
+                            {
+                              label: "Ejercicios",
+                              value: w.exercises
+                                .map((e) => `${e.name} ${e.sets}×${e.reps} ${e.weight}kg`)
+                                .join(" · "),
+                              full: true,
+                            },
+                            {
+                              label: "Intensidad percibida",
+                              value: w.perceivedIntensity ?? "—",
+                            },
+                          ]}
+                          actions={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(w._id, w.createdAt)}
+                              disabled={!editable}
+                              title={editable ? "Eliminar" : "Fuera de ventana 10 min"}
+                            >
+                              Eliminar
+                            </Button>
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </>
               )}
               {loading && <p className="text-xs text-text-light">Cargando...</p>}
             </CardContent>
@@ -463,7 +505,6 @@ export function Workouts() {
                 </ResponsiveContainer>
               )}
             </div>
-            <p className="text-xs text-text-light mt-2">Carga por ejercicio desde GET /api/workouts. Sin 1RM (MVP).</p>
           </ChartCard>
         </>
       )}

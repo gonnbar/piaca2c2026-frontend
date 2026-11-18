@@ -4,6 +4,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { ChartCard } from "../components/ui/ChartCard";
+import { RecordCard } from "../components/ui/RecordCard";
 import { useAuth } from "../contexts/AuthContext";
 import { FoodFormModal, type FoodFormInput } from "../components/foods/FoodFormModal";
 import { canEdit, calculateMealTotals } from "../utils/calculations";
@@ -351,9 +352,6 @@ export function Meals() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h1 className="text-2xl font-bold text-text">Comidas</h1>
-        <p className="text-sm text-text-light">
-          Cantidad flexible, cálculo automático kcal/macros (AGENTS.md: Comidas)
-        </p>
       </div>
 
       {/* Filtros: solo nutricionista (paciente usa su id de sesión) */}
@@ -382,287 +380,332 @@ export function Meals() {
         </Card>
       )}
 
+      {error && (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      )}
+      {success && (
+        <p role="status" className="text-sm text-primary">
+          {success}
+        </p>
+      )}
+
       {needsPatient ? (
         <Card>
           <CardContent>
             <p className="text-sm text-text-light">
-              Seleccioná un paciente para registrar y ver sus comidas.
+              Seleccioná un paciente para ver sus comidas.
             </p>
           </CardContent>
         </Card>
       ) : (
         <>
-          {/* Formulario */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Registrar comida</CardTitle>
-          <p className="text-sm text-text-light">
-            Cada comida contiene uno o más alimentos. Registrá cantidad en gramos. El sistema calcula calorías,
-            proteínas, carbohidratos y grasas automáticamente.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-text">Fecha y hora</label>
-                <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
-              </div>
-              <div className="flex items-end">
-                <div className="text-sm text-text-light bg-background rounded-md px-3 py-2 w-full">
-                  {previewTotals ? (
-                    <span>
-                      Preview: <b>{previewTotals.calories.toFixed(0)} kcal</b> · P {previewTotals.protein.toFixed(1)}g ·
-                      C {previewTotals.carbs.toFixed(1)}g · G {previewTotals.fat.toFixed(1)}g
-                    </span>
-                  ) : (
-                    "Agregá alimentos para ver preview"
-                  )}
+          {/* Formulario: solo el paciente registra comidas */}
+          {!isNutritionist && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Registrar comida</CardTitle>
+              <p className="text-sm text-text-light">
+                Cada comida contiene uno o más alimentos. Registrá cantidad en gramos. El sistema calcula calorías,
+                proteínas, carbohidratos y grasas automáticamente.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-text">Fecha y hora</label>
+                    <Input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} required />
+                  </div>
+                  <div className="flex items-end">
+                    <div className="text-sm text-text-light bg-background rounded-md px-3 py-2 w-full">
+                      {previewTotals ? (
+                        <span>
+                          Preview: <b>{previewTotals.calories.toFixed(0)} kcal</b> · P {previewTotals.protein.toFixed(1)}g ·
+                          C {previewTotals.carbs.toFixed(1)}g · G {previewTotals.fat.toFixed(1)}g
+                        </span>
+                      ) : (
+                        "Agregá alimentos para ver preview"
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text">Alimentos (flexible, sin categorías fijas)</span>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setItems((prev) => [...prev, { foodId: "", grams: "" }])}
-                >
-                  + Alimento
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-text">Alimentos (flexible, sin categorías fijas)</span>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setItems((prev) => [...prev, { foodId: "", grams: "" }])}
+                    >
+                      + Alimento
+                    </Button>
+                  </div>
+
+                  {items.map((row, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-[minmax(0,1fr)_84px_40px] items-center gap-2 sm:grid-cols-[1fr_120px_40px]"
+                    >
+                      <select
+                        value={row.foodId}
+                        onChange={(e) =>
+                          setItems((prev) => prev.map((r, i) => (i === idx ? { ...r, foodId: e.target.value } : r)))
+                        }
+                        className="h-10 min-w-0 w-full rounded-md border border-border bg-surface px-3 text-sm"
+                        required
+                      >
+                        <option value="">
+                          {selectableFoods.length === 0
+                            ? loading
+                              ? "Cargando alimentos..."
+                              : "Sin alimentos — ejecute seed"
+                            : "Seleccionar alimento"}
+                        </option>
+                        {selectableFoods.map((f) => (
+                          <option key={f._id} value={f._id}>
+                            {f.name} · {f.category} ({f.calories}kcal/100g)
+                          </option>
+                        ))}
+                      </select>
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="gramos"
+                        value={row.grams}
+                        onChange={(e) =>
+                          setItems((prev) => prev.map((r, i) => (i === idx ? { ...r, grams: e.target.value } : r)))
+                        }
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
+                        disabled={items.length === 1}
+                        aria-label="Quitar"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button type="submit" className="w-full sm:w-auto">
+                  Guardar comida
                 </Button>
-              </div>
+              </form>
+            </CardContent>
+          </Card>
+          )}
 
-              {items.map((row, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-[minmax(0,1fr)_84px_40px] items-center gap-2 sm:grid-cols-[1fr_120px_40px]"
-                >
-                  <select
-                    value={row.foodId}
-                    onChange={(e) =>
-                      setItems((prev) => prev.map((r, i) => (i === idx ? { ...r, foodId: e.target.value } : r)))
-                    }
-                    className="h-10 min-w-0 w-full rounded-md border border-border bg-surface px-3 text-sm"
-                    required
-                  >
-                    <option value="">
-                      {selectableFoods.length === 0
-                        ? loading
-                          ? "Cargando alimentos..."
-                          : "Sin alimentos — ejecute seed"
-                        : "Seleccionar alimento"}
-                    </option>
-                    {selectableFoods.map((f) => (
-                      <option key={f._id} value={f._id}>
-                        {f.name} · {f.category} ({f.calories}kcal/100g)
-                      </option>
-                    ))}
-                  </select>
-                  <Input
-                    type="number"
-                    min={1}
-                    placeholder="gramos"
-                    value={row.grams}
-                    onChange={(e) =>
-                      setItems((prev) => prev.map((r, i) => (i === idx ? { ...r, grams: e.target.value } : r)))
-                    }
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}
-                    disabled={items.length === 1}
-                    aria-label="Quitar"
-                  >
-                    ✕
-                  </Button>
+          {/* Listado por comida + totales diarios */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Comidas registradas ({meals.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {meals.length === 0 ? (
+                <p className="text-sm text-text-light">Sin comidas para el paciente/filtro seleccionado.</p>
+              ) : (
+                <>
+                  <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
+                    <table className="w-full min-w-[640px] text-sm">
+                    <thead className="bg-background">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
+                        <th className="px-3 py-2 text-left font-medium text-text-light">Alimentos</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light">kcal</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light">P</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light">C</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light">G</th>
+                        <th className="px-3 py-2 text-right font-medium text-text-light"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {meals.map((m) => {
+                        const editable = canEdit(m.createdAt, EDIT_WINDOW_MS) || user?.role === "nutritionist";
+                        return (
+                          <tr key={m._id} className="border-t border-border">
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              {new Date(m.date).toLocaleString("es-AR")}
+                              {!editable && (
+                                <span className="ml-2 text-xs bg-border px-1.5 py-0.5 rounded">bloqueado 10′</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {m.items.map((it) => `${it.food.name} ${it.grams}g`).join(" · ")}
+                            </td>
+                            <td className="px-3 py-2 text-right">{m.totalCalories.toFixed(0)}</td>
+                            <td className="px-3 py-2 text-right">{m.totalProtein.toFixed(1)}</td>
+                            <td className="px-3 py-2 text-right">{m.totalCarbs.toFixed(1)}</td>
+                            <td className="px-3 py-2 text-right">{m.totalFat.toFixed(1)}</td>
+                            <td className="px-3 py-2 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(m._id, m.createdAt)}
+                                disabled={!editable}
+                                title={editable ? "Eliminar" : "Fuera de ventana 10 min (paciente)"}
+                              >
+                                Eliminar
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
-            </div>
 
-            {error && <p className="text-sm text-error">{error}</p>}
-            {success && <p className="text-sm text-primary">{success}</p>}
+                  <div className="space-y-3 md:hidden">
+                    {meals.map((m) => {
+                      const editable = canEdit(m.createdAt, EDIT_WINDOW_MS) || user?.role === "nutritionist";
+                      return (
+                        <RecordCard
+                          key={m._id}
+                          title={new Date(m.date).toLocaleString("es-AR")}
+                          badges={
+                            !editable ? (
+                              <span className="text-xs bg-border px-1.5 py-0.5 rounded">
+                                bloqueado 10′
+                              </span>
+                            ) : undefined
+                          }
+                          fields={[
+                            {
+                              label: "Alimentos",
+                              value: m.items.map((it) => `${it.food.name} ${it.grams}g`).join(" · "),
+                              full: true,
+                            },
+                            { label: "kcal", value: m.totalCalories.toFixed(0) },
+                            { label: "Proteínas", value: m.totalProtein.toFixed(1) },
+                            { label: "Carbohidratos", value: m.totalCarbs.toFixed(1) },
+                            { label: "Grasas", value: m.totalFat.toFixed(1) },
+                          ]}
+                          actions={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(m._id, m.createdAt)}
+                              disabled={!editable}
+                              title={editable ? "Eliminar" : "Fuera de ventana 10 min (paciente)"}
+                            >
+                              Eliminar
+                            </Button>
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
-            <Button type="submit" className="w-full sm:w-auto">
-              Guardar comida
-            </Button>
-            <p className="text-xs text-text-light">
-              Totales se calculan en backend (`Meal.totalCalories/Protein/Carbs/Fat`) a partir de `Food` por 100g.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+              {dailyTotals.length > 0 && (
+                <div className="rounded-lg bg-background p-3">
+                  <p className="text-sm font-medium text-text mb-2">Totales diarios</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[320px] text-sm">
+                      <thead>
+                        <tr className="text-text-light">
+                          <th className="text-left font-medium px-2 py-1">Día</th>
+                          <th className="text-right font-medium px-2 py-1">kcal</th>
+                          <th className="text-right font-medium px-2 py-1">P</th>
+                          <th className="text-right font-medium px-2 py-1">C</th>
+                          <th className="text-right font-medium px-2 py-1">G</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dailyTotals.map((d) => (
+                          <tr key={d.day} className="border-t border-border">
+                            <td className="px-2 py-1">{d.day}</td>
+                            <td className="px-2 py-1 text-right">{d.calories.toFixed(0)}</td>
+                            <td className="px-2 py-1 text-right">{d.protein.toFixed(1)}</td>
+                            <td className="px-2 py-1 text-right">{d.carbs.toFixed(1)}</td>
+                            <td className="px-2 py-1 text-right">{d.fat.toFixed(1)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Listado por comida + totales diarios */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Comidas registradas ({meals.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {meals.length === 0 ? (
-            <p className="text-sm text-text-light">Sin comidas para el paciente/filtro seleccionado.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full min-w-[640px] text-sm">
-                <thead className="bg-background">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
-                    <th className="px-3 py-2 text-left font-medium text-text-light">Alimentos</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light">kcal</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light">P</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light">C</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light">G</th>
-                    <th className="px-3 py-2 text-right font-medium text-text-light"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {meals.map((m) => {
-                    const editable = canEdit(m.createdAt, EDIT_WINDOW_MS) || user?.role === "nutritionist";
-                    return (
-                      <tr key={m._id} className="border-t border-border">
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          {new Date(m.date).toLocaleString("es-AR")}
-                          {!editable && (
-                            <span className="ml-2 text-xs bg-border px-1.5 py-0.5 rounded">bloqueado 10′</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          {m.items.map((it) => `${it.food.name} ${it.grams}g`).join(" · ")}
-                        </td>
-                        <td className="px-3 py-2 text-right">{m.totalCalories.toFixed(0)}</td>
-                        <td className="px-3 py-2 text-right">{m.totalProtein.toFixed(1)}</td>
-                        <td className="px-3 py-2 text-right">{m.totalCarbs.toFixed(1)}</td>
-                        <td className="px-3 py-2 text-right">{m.totalFat.toFixed(1)}</td>
-                        <td className="px-3 py-2 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(m._id, m.createdAt)}
-                            disabled={!editable}
-                            title={editable ? "Eliminar" : "Fuera de ventana 10 min (paciente)"}
-                          >
-                            Eliminar
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {dailyTotals.length > 0 && (
-            <div className="rounded-lg bg-background p-3">
-              <p className="text-sm font-medium text-text mb-2">Totales diarios</p>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[320px] text-sm">
-                  <thead>
-                    <tr className="text-text-light">
-                      <th className="text-left font-medium px-2 py-1">Día</th>
-                      <th className="text-right font-medium px-2 py-1">kcal</th>
-                      <th className="text-right font-medium px-2 py-1">P</th>
-                      <th className="text-right font-medium px-2 py-1">C</th>
-                      <th className="text-right font-medium px-2 py-1">G</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dailyTotals.map((d) => (
-                      <tr key={d.day} className="border-t border-border">
-                        <td className="px-2 py-1">{d.day}</td>
-                        <td className="px-2 py-1 text-right">{d.calories.toFixed(0)}</td>
-                        <td className="px-2 py-1 text-right">{d.protein.toFixed(1)}</td>
-                        <td className="px-2 py-1 text-right">{d.carbs.toFixed(1)}</td>
-                        <td className="px-2 py-1 text-right">{d.fat.toFixed(1)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Gráficos - consumen API, no hardcodeados */}
+          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+            <ChartCard title="Distribución de macronutrientes">
+              <div className="h-64">
+                {macroDistribution.length === 0 ? (
+                  <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={macroDistribution}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius="70%"
+                        labelLine={false}
+                        label={({ percent }) => `${Math.round((percent ?? 0) * 100)}%`}
+                      >
+                        {macroDistribution.map((entry, i) => (
+                          <Cell key={i} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </ChartCard>
 
-      {/* Gráficos - consumen API, no hardcodeados */}
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <ChartCard title="Distribución de macronutrientes (período)">
-          <div className="h-64">
-            {macroDistribution.length === 0 ? (
-              <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={macroDistribution}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius="70%"
-                    labelLine={false}
-                    label={({ percent }) => `${Math.round((percent ?? 0) * 100)}%`}
-                  >
-                    {macroDistribution.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+            <ChartCard title="Evolución de calorías (por día)">
+              <div className="h-64">
+                {dailyTotals.length === 0 ? (
+                  <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailyTotals} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="dayLabel" tick={{ fontSize: 11 }} minTickGap={16} />
+                      <YAxis tick={{ fontSize: 11 }} width={36} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="calories" stroke="#4CAF50" strokeWidth={2} dot />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
+
+            <ChartCard title="Evolución de macronutrientes (por día)">
+              <div className="h-64">
+                {dailyTotals.length === 0 ? (
+                  <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyTotals} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <XAxis dataKey="dayLabel" tick={{ fontSize: 11 }} minTickGap={16} />
+                      <YAxis tick={{ fontSize: 11 }} width={36} />
+                      <Tooltip />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="protein" name="Proteínas" fill={COLORS.protein} />
+                      <Bar dataKey="carbs" name="Carbohidratos" fill={COLORS.carbs} />
+                      <Bar dataKey="fat" name="Grasas" fill={COLORS.fat} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
           </div>
-          <p className="text-xs text-text-light mt-2">Suma de P/C/G del período filtrado.</p>
-        </ChartCard>
 
-        <ChartCard title="Evolución de calorías (por día)">
-          <div className="h-64">
-            {dailyTotals.length === 0 ? (
-              <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyTotals} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis dataKey="dayLabel" tick={{ fontSize: 11 }} minTickGap={16} />
-                  <YAxis tick={{ fontSize: 11 }} width={36} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="calories" stroke="#4CAF50" strokeWidth={2} dot />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </ChartCard>
-
-        <ChartCard title="Evolución de macronutrientes (por día)">
-          <div className="h-64">
-            {dailyTotals.length === 0 ? (
-              <p className="text-sm text-text-light h-full flex items-center justify-center">Sin datos</p>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dailyTotals} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis dataKey="dayLabel" tick={{ fontSize: 11 }} minTickGap={16} />
-                  <YAxis tick={{ fontSize: 11 }} width={36} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="protein" name="Proteínas" fill={COLORS.protein} />
-                  <Bar dataKey="carbs" name="Carbohidratos" fill={COLORS.carbs} />
-                  <Bar dataKey="fat" name="Grasas" fill={COLORS.fat} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </ChartCard>
-      </div>
-
-          <p className="text-xs text-text-light">
-            Gráficos consumen `GET /api/meals` y `GET /api/foods`. Totales diarios y distribución calculados en frontend
-            desde datos API; totales por comida vienen ya calculados de backend (`totalCalories/Protein/Carbs/Fat`).
-          </p>
         </>
       )}
 
@@ -726,14 +769,8 @@ export function Meals() {
                 >
                   {showInactive ? "Ocultar eliminados" : "Mostrar eliminados"}
                 </Button>
-                <span className="text-xs text-text-light">
-                  El borrado es lógico: podés reactivar alimentos eliminados.
-                </span>
               </div>
             )}
-
-            {needsPatient && error && <p className="text-sm text-error">{error}</p>}
-            {needsPatient && success && <p className="text-sm text-primary">{success}</p>}
 
             <div className="flex flex-wrap gap-2">
               <Button

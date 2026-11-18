@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { getPatientSummary } from "../services/consultations";
-import { getDashboardSummary } from "../services/dashboard";
+import { getDashboardSummary, getIMCEstadisticas, type IMCEstadisticas } from "../services/dashboard";
 import { formatDate } from "../utils/format";
 import type {
   DashboardActivityType,
@@ -74,6 +74,7 @@ function StatCard({ icon: Icon, label, value, hint }: { icon: LucideIcon; label:
 function NutritionistDashboard() {
   const navigate = useNavigate();
   const { data, loading, error } = useSummary<NutritionistSummary>(getDashboardSummary);
+  const { data: imcData, loading: imcLoading, error: imcError } = useSummary<IMCEstadisticas>(getIMCEstadisticas);
 
   if (loading) return <p className="text-sm text-text-light">Cargando…</p>;
   if (!data) return <p className="text-sm text-error">{error || "No se pudo cargar el resumen"}</p>;
@@ -122,6 +123,57 @@ function NutritionistDashboard() {
           value={String(data.metrics.newPatientsThisMonth)}
         />
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>Distribución de IMC</CardTitle>
+          <span className="text-xs text-text-light">
+            Últimos 30 días{imcData ? ` · ${imcData.totalPatients} pacientes` : ""}
+          </span>
+        </CardHeader>
+        <CardContent>
+          {imcLoading ? (
+            <p className="text-sm text-text-light">Cargando distribución de IMC…</p>
+          ) : !imcData ? (
+            <p className="text-sm text-error">{imcError || "No se pudo cargar la distribución de IMC."}</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                {
+                  label: "Bajo peso",
+                  range: "IMC < 18.5",
+                  value: imcData.underweight,
+                  tone: "bg-primary-soft text-primary-dark",
+                },
+                {
+                  label: "Normal",
+                  range: "18.5 – 24.9",
+                  value: imcData.normalWeight,
+                  tone: "bg-primary/10 text-primary-dark",
+                },
+                {
+                  label: "Sobrepeso",
+                  range: "25 – 29.9",
+                  value: imcData.overweight,
+                  tone: "bg-secondary/20 text-text",
+                },
+                {
+                  label: "Obesidad",
+                  range: "IMC ≥ 30",
+                  value: imcData.obese,
+                  tone: "bg-error/10 text-error",
+                },
+              ].map((item) => (
+                <div key={item.label} className={`min-w-0 rounded-lg p-4 ${item.tone}`}>
+                  <p className="text-xs font-medium">{item.label}</p>
+                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className="text-xs opacity-80">{item.range}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

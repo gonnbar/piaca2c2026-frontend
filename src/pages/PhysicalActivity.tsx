@@ -4,6 +4,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { ChartCard } from "../components/ui/ChartCard";
+import { RecordCard } from "../components/ui/RecordCard";
 import { useAuth } from "../contexts/AuthContext";
 import { canEdit } from "../utils/calculations";
 import { EDIT_WINDOW_MS } from "../utils/constants";
@@ -163,7 +164,6 @@ export function PhysicalActivity() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h1 className="text-2xl font-bold text-text">Actividad física</h1>
-        <p className="text-sm text-text-light">Tipo, duración, intensidad y fecha (AGENTS.md)</p>
       </div>
 
       {isNutritionist && (
@@ -276,8 +276,9 @@ export function PhysicalActivity() {
               {activities.length === 0 ? (
                 <p className="text-sm text-text-light">Sin actividades para el paciente.</p>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-border">
-                  <table className="w-full min-w-[560px] text-sm">
+                <>
+                  <div className="hidden overflow-x-auto rounded-lg border border-border md:block">
+                    <table className="w-full min-w-[560px] text-sm">
                     <thead className="bg-background">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium text-text-light">Fecha</th>
@@ -318,6 +319,42 @@ export function PhysicalActivity() {
                     </tbody>
                   </table>
                 </div>
+
+                  <div className="space-y-3 md:hidden">
+                    {activities.map((a) => {
+                      const editable = canEdit(a.createdAt, EDIT_WINDOW_MS) || user?.role === "nutritionist";
+                      return (
+                        <RecordCard
+                          key={a._id}
+                          title={new Date(a.date).toLocaleString("es-AR")}
+                          badges={
+                            !editable ? (
+                              <span className="text-xs bg-border px-1.5 py-0.5 rounded">
+                                bloqueado 10′
+                              </span>
+                            ) : undefined
+                          }
+                          fields={[
+                            { label: "Tipo", value: a.type },
+                            { label: "Duración", value: `${a.duration} min` },
+                            { label: "Intensidad", value: a.intensity ?? "—" },
+                          ]}
+                          actions={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(a._id, a.createdAt)}
+                              disabled={!editable}
+                              title={editable ? "Eliminar" : "Fuera de ventana 10 min"}
+                            >
+                              Eliminar
+                            </Button>
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </>
               )}
               {loading && <p className="text-xs text-text-light mt-2">Cargando...</p>}
             </CardContent>
