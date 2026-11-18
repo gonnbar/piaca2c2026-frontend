@@ -25,7 +25,7 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center">
+    <div className="flex min-h-[70vh] items-center justify-center px-4 py-6">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Iniciar sesión</CardTitle>
