@@ -1,6 +1,6 @@
 # PIACA - Frontend (piaca2c2026-frontend)
 
-Webapp responsive para seguimiento integral de pacientes de nutrición deportiva/culturismo.
+Webapp responsive para seguimiento integral de pacientes de nutrición.
 
 ## Stack
 - React 19 + TypeScript + Vite 8
@@ -8,7 +8,7 @@ Webapp responsive para seguimiento integral de pacientes de nutrición deportiva
 - React Router 7
 - Recharts
 
-## Identidad visual (AGENTS.md)
+## Identidad visual
 ```
 Primary: #4CAF50 / Dark #388E3C / Light #8BC34A
 Background: #F5F7FA / Surface: #FFFFFF
@@ -43,8 +43,3 @@ Copiar `.env.example` a `.env`:
 VITE_API_URL=http://localhost:3000/api
 ```
 
-## Flujo API (AGENTS.md)
-`route → middleware → controller → service → model → MongoDB` — el frontend solo consume `/api/*` con JWT.
-
-## Regla 10 minutos
-`createdAt + 10min > now` validada en backend; `utils/calculations.ts:canEdit` y `hooks/useEditWindow.ts` solo reflejan visualmente.
